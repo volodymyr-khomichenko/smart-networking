@@ -4,7 +4,7 @@ A simple mobile-first digital networking card for conferences, events, and perso
 
 
 
-**Live demo:** *https://smart-networking-git-main-volodymyrkhomichenko.vercel.app/*
+**Live demo:** *https://smart-networking-eight.vercel.app/*
 
 
 
