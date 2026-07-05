@@ -4,11 +4,29 @@ import "@fontsource-variable/inter";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
 
+const SITE_URL = "https://smart-networking.khomichenko.com";
+const DESCRIPTION =
+  "One mobile page with QR codes for all your professional links. Built for conferences, events and networking.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Smart Networking",
-  description:
-    "One mobile page with QR codes for all your professional links. Built for conferences, events and networking.",
+  description: DESCRIPTION,
   manifest: "/manifest.webmanifest",
+  openGraph: {
+    title: "Smart Networking",
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: "Smart Networking",
+    type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Smart Networking",
+    description: DESCRIPTION,
+    images: ["/og.png"],
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },
