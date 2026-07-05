@@ -8,6 +8,19 @@ export const metadata: Metadata = {
   title: "Smart Networking",
   description:
     "One mobile page with QR codes for all your professional links. Built for conferences, events and networking.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Smart Networking",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
