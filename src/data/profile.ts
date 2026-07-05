@@ -34,6 +34,8 @@ export interface Contact {
   type: ContactType;
   /** Icon id from src/components/icons.tsx; defaults to the contact id */
   icon?: string;
+  /** Pinned above the tabs (up to 5 cards) */
+  favorite?: boolean;
   /** Which profile modes this card belongs to */
   modes: ModeId[];
   /**
@@ -68,6 +70,7 @@ export const profile: Profile = {
   contacts: [
     {
       id: "linkedin",
+      favorite: true,
       modes: ["business"],
       label: "LinkedIn",
       hint: "Let's connect professionally",
@@ -76,6 +79,7 @@ export const profile: Profile = {
     },
     {
       id: "website",
+      favorite: true,
       modes: ["hobby"],
       label: "Website",
       hint: "My personal hub — book, podcast, articles",
@@ -92,6 +96,7 @@ export const profile: Profile = {
     },
     {
       id: "substack",
+      favorite: true,
       modes: ["hobby"],
       label: "Substack",
       hint: "My newsletter: Rapid Growth",

@@ -45,6 +45,22 @@ export default function Editor({
       contacts: d.contacts.map((c, i) => (i === idx ? { ...c, ...patch } : c)),
     }));
 
+  const toggleFavorite = (idx: number) =>
+    setDraft((d) => {
+      const target = d.contacts[idx];
+      const pinnedCount = d.contacts.filter((c) => c.favorite).length;
+      if (!target.favorite && pinnedCount >= 5) {
+        alert("You can pin up to 5 links.");
+        return d;
+      }
+      return {
+        ...d,
+        contacts: d.contacts.map((c, i) =>
+          i === idx ? { ...c, favorite: !c.favorite } : c
+        ),
+      };
+    });
+
   const removeContact = (idx: number) =>
     setDraft((d) => ({
       ...d,
@@ -180,9 +196,12 @@ export default function Editor({
         </section>
 
         {/* Cards */}
-        <h3 className="mt-8 mb-3 px-1 text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">
+        <h3 className="mt-8 mb-1 px-1 text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">
           Cards ({draft.contacts.length})
         </h3>
+        <p className="mb-3 px-1 text-xs text-ink-soft">
+          Tap the star to pin a link above the tabs (up to 5).
+        </p>
         <div className="flex flex-col gap-3">
           {draft.contacts.map((c, idx) => (
             <div
@@ -200,6 +219,21 @@ export default function Editor({
                   placeholder="Card name (e.g. LinkedIn)"
                   aria-label="Card name"
                 />
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(idx)}
+                  aria-label={c.favorite ? `Unpin ${c.label || "card"}` : `Pin ${c.label || "card"}`}
+                  aria-pressed={c.favorite ?? false}
+                  className={`shrink-0 rounded-lg border px-2.5 py-2 text-sm transition-colors ${
+                    c.favorite
+                      ? "border-lanyard bg-lanyard-soft text-lanyard"
+                      : "border-line text-ink-soft hover:border-lanyard hover:text-lanyard"
+                  }`}
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4">
+                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                  </svg>
+                </button>
                 <button
                   type="button"
                   onClick={() => removeContact(idx)}

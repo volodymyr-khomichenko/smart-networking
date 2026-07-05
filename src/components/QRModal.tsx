@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Contact, Profile, qrValueFor } from "@/data/profile";
 
@@ -22,6 +22,7 @@ function Corner({ className }: { className: string }) {
 
 export default function QRModal({ contact, profile, onClose }: QRModalProps) {
   const value = qrValueFor(contact, profile);
+  const [copied, setCopied] = useState(false);
 
   // Close on Escape, lock body scroll while open
   useEffect(() => {
@@ -33,6 +34,29 @@ export default function QRModal({ contact, profile, onClose }: QRModalProps) {
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  const copyValue = async () => {
+    const text = contact.value;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for older browsers / restricted contexts
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } catch {
+        /* give up silently */
+      }
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const showCopy = contact.type === "url" || contact.type === "email";
 
   return (
     <div
@@ -70,13 +94,26 @@ export default function QRModal({ contact, profile, onClose }: QRModalProps) {
           />
         </div>
 
-        {contact.type === "url" && (
-          <p className="mt-4 max-w-full truncate text-xs text-ink-soft">
-            {contact.value}
-          </p>
-        )}
-        {contact.type === "email" && (
-          <p className="mt-4 text-xs text-ink-soft">{contact.value}</p>
+        {showCopy && (
+          <button
+            type="button"
+            onClick={copyValue}
+            aria-label={`Copy ${contact.label} link`}
+            className="mt-4 flex max-w-full items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs text-ink-soft transition-colors hover:border-lanyard hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+          >
+            <span className="min-w-0 truncate">
+              {copied ? "Copied to clipboard!" : contact.value}
+            </span>
+            {copied ? (
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4 shrink-0 text-lanyard">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4 shrink-0">
+                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+              </svg>
+            )}
+          </button>
         )}
 
         <button

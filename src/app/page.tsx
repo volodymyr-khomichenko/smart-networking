@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import ProfileCard from "@/components/ProfileCard";
 import ContactCard from "@/components/ContactCard";
 import ModeSwitcher from "@/components/ModeSwitcher";
+import PinnedBar from "@/components/PinnedBar";
 import QRModal from "@/components/QRModal";
 import Editor from "@/components/Editor";
 import { Contact, Mode, Profile, profile as demoProfile } from "@/data/profile";
@@ -25,6 +26,11 @@ export default function Home() {
     }
   }, []);
 
+  const pinned = useMemo(
+    () => profile.contacts.filter((c) => c.favorite).slice(0, 5),
+    [profile]
+  );
+
   const tabList = useMemo<Mode[]>(
     () => [{ id: "all", label: "All" }, ...profile.tabs],
     [profile]
@@ -37,6 +43,23 @@ export default function Home() {
         : profile.contacts.filter((c) => c.modes.includes(mode as never)),
     [mode, profile]
   );
+
+  const handleToggleFavorite = (contact: Contact) => {
+    const pinnedCount = profile.contacts.filter((c) => c.favorite).length;
+    if (!contact.favorite && pinnedCount >= 5) {
+      alert("You can pin up to 5 links.");
+      return;
+    }
+    const next: Profile = {
+      ...profile,
+      contacts: profile.contacts.map((c) =>
+        c.id === contact.id ? { ...c, favorite: !c.favorite } : c
+      ),
+    };
+    setProfile(next);
+    setIsCustom(true);
+    storeProfile(next);
+  };
 
   const handleSave = (p: Profile) => {
     storeProfile(p);
@@ -56,6 +79,8 @@ export default function Home() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-10 pt-6">
       <ProfileCard profile={profile} onEdit={() => setEditing(true)} />
 
+      <PinnedBar contacts={pinned} onSelect={setActive} />
+
       <ModeSwitcher modes={tabList} active={mode} onChange={setMode} />
 
       <h2 className="mt-6 mb-3 px-1 text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">
@@ -64,7 +89,12 @@ export default function Home() {
 
       <div className="flex flex-col gap-3">
         {visibleContacts.map((contact) => (
-          <ContactCard key={contact.id} contact={contact} onSelect={setActive} />
+          <ContactCard
+            key={contact.id}
+            contact={contact}
+            onSelect={setActive}
+            onToggleFavorite={handleToggleFavorite}
+          />
         ))}
         {visibleContacts.length === 0 && (
           <p className="rounded-xl border border-dashed border-line bg-card px-4 py-6 text-center text-sm text-ink-soft">
