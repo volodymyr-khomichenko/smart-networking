@@ -1,6 +1,6 @@
 // Smart Networking service worker: cache-first with background refresh.
 // Once the page has been opened online, it keeps working offline.
-const CACHE = "smart-networking-v2";
+const CACHE = "smart-networking-v3";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(["/", "/manifest.webmanifest", "/icon-192.png"])));

@@ -7,19 +7,23 @@
 
 export type ContactType = "url" | "email" | "vcard";
 
-export type ModeId = "business" | "personal" | "author";
+export type ModeId = "business" | "personal" | "hobby";
 
 export interface Mode {
   id: ModeId | "all";
   label: string;
 }
 
-/** Tabs shown at the top of the card list. "All" shows every card. */
-export const modes: Mode[] = [
-  { id: "all", label: "All" },
+export interface Tab {
+  id: ModeId;
+  label: string;
+}
+
+/** Default tab names; each profile stores its own editable copy. */
+export const DEFAULT_TABS: Tab[] = [
   { id: "business", label: "Business" },
   { id: "personal", label: "Personal" },
-  { id: "author", label: "Author" },
+  { id: "hobby", label: "Hobby" },
 ];
 
 export interface Contact {
@@ -28,6 +32,8 @@ export interface Contact {
   /** Short line shown under the label on the card */
   hint: string;
   type: ContactType;
+  /** Icon id from src/components/icons.tsx; defaults to the contact id */
+  icon?: string;
   /** Which profile modes this card belongs to */
   modes: ModeId[];
   /**
@@ -44,6 +50,8 @@ export interface Profile {
   bio: string;
   /** Shown in the avatar circle, e.g. "VK" */
   initials: string;
+  /** Editable tab names for the card list */
+  tabs: Tab[];
   contacts: Contact[];
 }
 
@@ -52,6 +60,11 @@ export const profile: Profile = {
   title: "Tech B2B Marketing Strategist & Author",
   bio: "12+ years in marketing, 8+ in B2B tech. Author of The Marketing Behind Rapid Growth book, podcast and newsletter.",
   initials: "VK",
+  tabs: [
+    { id: "business", label: "Business" },
+    { id: "personal", label: "Personal" },
+    { id: "hobby", label: "Hobby" },
+  ],
   contacts: [
     {
       id: "linkedin",
@@ -63,7 +76,7 @@ export const profile: Profile = {
     },
     {
       id: "website",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "Website",
       hint: "My personal hub — book, podcast, articles",
       type: "url",
@@ -79,7 +92,7 @@ export const profile: Profile = {
     },
     {
       id: "substack",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "Substack",
       hint: "My newsletter: Rapid Growth",
       type: "url",
@@ -87,7 +100,7 @@ export const profile: Profile = {
     },
     {
       id: "apple-podcasts",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "Apple Podcasts",
       hint: "My podcast on Apple Podcasts",
       type: "url",
@@ -96,7 +109,7 @@ export const profile: Profile = {
     },
     {
       id: "spotify",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "Spotify",
       hint: "My podcast on Spotify",
       type: "url",
@@ -104,7 +117,7 @@ export const profile: Profile = {
     },
     {
       id: "youtube",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "YouTube",
       hint: "Podcast episodes in video",
       type: "url",
@@ -121,7 +134,7 @@ export const profile: Profile = {
     },
     {
       id: "medium",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "Medium",
       hint: "My marketing articles",
       type: "url",
@@ -129,7 +142,7 @@ export const profile: Profile = {
     },
     {
       id: "hackernoon",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "HackerNoon",
       hint: "My tech & growth stories",
       type: "url",
@@ -137,7 +150,7 @@ export const profile: Profile = {
     },
     {
       id: "amazon",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "Amazon",
       hint: "My book on Amazon",
       type: "url",
@@ -145,7 +158,7 @@ export const profile: Profile = {
     },
     {
       id: "goodreads",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "Goodreads",
       hint: "My author page on Goodreads",
       type: "url",
@@ -153,7 +166,7 @@ export const profile: Profile = {
     },
     {
       id: "producthunt",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "Product Hunt",
       hint: "My launches & product picks",
       type: "url",
@@ -161,7 +174,7 @@ export const profile: Profile = {
     },
     {
       id: "github",
-      modes: ["author"],
+      modes: ["hobby"],
       label: "GitHub",
       hint: "My side projects (like this one)",
       type: "url",
@@ -188,7 +201,7 @@ export const profile: Profile = {
       label: "TikTok",
       hint: "Behind Rapid Growth in short video",
       type: "url",
-      modes: ["author"],
+      modes: ["hobby"],
       value: "https://www.tiktok.com/@behind.rapid.growth",
     },
     {
@@ -222,6 +235,15 @@ export const profile: Profile = {
       type: "url",
       modes: ["business"],
       value: "https://www.pinterest.com/khomichenko/",
+    },
+    {
+      id: "smart-networking",
+      label: "Smart Networking",
+      hint: "This very app — my AI-built side project",
+      type: "url",
+      icon: "app",
+      modes: ["hobby"],
+      value: "https://smart-networking.khomichenko.com",
     },
   ],
 };
