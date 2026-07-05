@@ -7,12 +7,29 @@
 
 export type ContactType = "url" | "email" | "vcard";
 
+export type ModeId = "business" | "personal" | "author";
+
+export interface Mode {
+  id: ModeId | "all";
+  label: string;
+}
+
+/** Tabs shown at the top of the card list. "All" shows every card. */
+export const modes: Mode[] = [
+  { id: "all", label: "All" },
+  { id: "business", label: "Business" },
+  { id: "personal", label: "Personal" },
+  { id: "author", label: "Author" },
+];
+
 export interface Contact {
   id: string;
   label: string;
   /** Short line shown under the label on the card */
   hint: string;
   type: ContactType;
+  /** Which profile modes this card belongs to */
+  modes: ModeId[];
   /**
    * For "url":   full link, e.g. https://linkedin.com/in/you
    * For "email": plain address, e.g. you@example.com
@@ -38,6 +55,7 @@ export const profile: Profile = {
   contacts: [
     {
       id: "linkedin",
+      modes: ["business"],
       label: "LinkedIn",
       hint: "Let's connect professionally",
       type: "url",
@@ -45,13 +63,23 @@ export const profile: Profile = {
     },
     {
       id: "website",
+      modes: ["author"],
       label: "Website",
       hint: "My personal hub — book, podcast, articles",
       type: "url",
       value: "https://khomichenko.com/",
     },
     {
+      id: "calendly",
+      label: "Calendly",
+      hint: "Book a meeting with me",
+      type: "url",
+      modes: ["business"],
+      value: "https://calendly.com/khomichenko/booking",
+    },
+    {
       id: "substack",
+      modes: ["author"],
       label: "Substack",
       hint: "My newsletter: Rapid Growth",
       type: "url",
@@ -59,6 +87,7 @@ export const profile: Profile = {
     },
     {
       id: "apple-podcasts",
+      modes: ["author"],
       label: "Apple Podcasts",
       hint: "My podcast on Apple Podcasts",
       type: "url",
@@ -67,6 +96,7 @@ export const profile: Profile = {
     },
     {
       id: "spotify",
+      modes: ["author"],
       label: "Spotify",
       hint: "My podcast on Spotify",
       type: "url",
@@ -74,6 +104,7 @@ export const profile: Profile = {
     },
     {
       id: "youtube",
+      modes: ["author"],
       label: "YouTube",
       hint: "Podcast episodes in video",
       type: "url",
@@ -82,6 +113,7 @@ export const profile: Profile = {
     },
     {
       id: "x",
+      modes: ["business"],
       label: "X / Twitter",
       hint: "Daily takes on B2B marketing",
       type: "url",
@@ -89,6 +121,7 @@ export const profile: Profile = {
     },
     {
       id: "medium",
+      modes: ["author"],
       label: "Medium",
       hint: "My marketing articles",
       type: "url",
@@ -96,6 +129,7 @@ export const profile: Profile = {
     },
     {
       id: "hackernoon",
+      modes: ["author"],
       label: "HackerNoon",
       hint: "My tech & growth stories",
       type: "url",
@@ -103,6 +137,7 @@ export const profile: Profile = {
     },
     {
       id: "amazon",
+      modes: ["author"],
       label: "Amazon",
       hint: "My book on Amazon",
       type: "url",
@@ -110,6 +145,7 @@ export const profile: Profile = {
     },
     {
       id: "goodreads",
+      modes: ["author"],
       label: "Goodreads",
       hint: "My author page on Goodreads",
       type: "url",
@@ -117,6 +153,7 @@ export const profile: Profile = {
     },
     {
       id: "producthunt",
+      modes: ["author"],
       label: "Product Hunt",
       hint: "My launches & product picks",
       type: "url",
@@ -124,10 +161,67 @@ export const profile: Profile = {
     },
     {
       id: "github",
+      modes: ["author"],
       label: "GitHub",
       hint: "My side projects (like this one)",
       type: "url",
       value: "https://github.com/volodymyr-khomichenko",
+    },
+    {
+      id: "instagram",
+      label: "Instagram",
+      hint: "Photos & behind the scenes",
+      type: "url",
+      modes: ["personal"],
+      value: "https://www.instagram.com/khomichenko/",
+    },
+    {
+      id: "threads",
+      label: "Threads",
+      hint: "Daily thoughts on Threads",
+      type: "url",
+      modes: ["personal"],
+      value: "https://www.threads.com/@khomichenko",
+    },
+    {
+      id: "tiktok",
+      label: "TikTok",
+      hint: "Behind Rapid Growth in short video",
+      type: "url",
+      modes: ["author"],
+      value: "https://www.tiktok.com/@behind.rapid.growth",
+    },
+    {
+      id: "facebook",
+      label: "Facebook",
+      hint: "Let's connect on Facebook",
+      type: "url",
+      modes: ["personal"],
+      value: "https://www.facebook.com/vladimir.khomichenko",
+    },
+    {
+      id: "bluesky",
+      label: "Bluesky",
+      hint: "Find me on Bluesky",
+      type: "url",
+      modes: ["business"],
+      value: "https://bsky.app/profile/khomichenko.com",
+    },
+    {
+      id: "mastodon",
+      label: "Mastodon",
+      hint: "Find me on Mastodon",
+      type: "url",
+      modes: ["business"],
+      value: "https://mastodon.social/@Khomichenko",
+    },
+    {
+      id: "pinterest",
+      label: "Pinterest",
+      hint: "My boards & visual ideas",
+      type: "url",
+      modes: ["business"],
+      value: "https://www.pinterest.com/khomichenko/",
     },
   ],
 };

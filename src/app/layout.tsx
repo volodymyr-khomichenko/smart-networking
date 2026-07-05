@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/inter";
 import "./globals.css";
+import RegisterSW from "@/components/RegisterSW";
 
 export const metadata: Metadata = {
   title: "Smart Networking",
@@ -19,8 +20,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <RegisterSW />
+        {children}
+      </body>
     </html>
   );
 }
