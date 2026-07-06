@@ -1,7 +1,7 @@
 {
   "name": "Smart Networking",
   "short_name": "SmartNetwork",
-  "description": "One mobile page with QR codes for all your professional links.",
+  "description": "Every link you own, one scan away. Swap contacts and share anything via QR.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#eceef1",

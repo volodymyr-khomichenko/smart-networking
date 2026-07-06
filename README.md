@@ -1,35 +1,45 @@
 # Smart Networking
 
-A mobile-first digital networking card for conferences, events, and personal branding — with a QR code for every link and a built-in editor so anyone can make it their own.
+Every link you own, one scan away. A mobile-first link hub for swapping contacts and sharing anything — at conferences, on the street, in any conversation.
 
 **Live demo:** https://smart-networking.khomichenko.com
 
 ![Smart Networking](public/og.png)
 
-## Problem
+## The Problem
 
-Exchanging contacts at events is still too slow and fragmented. People open LinkedIn, search for their profile, copy links, or dictate email addresses — all while standing in a noisy hallway.
+It's not just conferences. It's every "oh, send me that link" moment:
 
-## Solution
+- You meet someone new — a meetup, a party, a random street conversation. Not everyone is on LinkedIn, so contact exchange turns into app-juggling.
+- You mention your book, your latest article, your podcast, your product launch — and promise to "send the link later." You won't. Neither will they ask twice.
+- You keep dozens of profiles across platforms, and the one you need is never the one you can find quickly.
 
-Smart Networking gives you one simple page with QR codes for all your professional links. Open the page, tap a card, show the QR code — done. The other person just points their camera.
+## The Solution — three jobs, one page
+
+**1. Swap contacts in seconds, anywhere.** Ask "where are you?" and show the right QR — LinkedIn for business, Instagram or TikTok for everyone else. They scan, you're connected.
+
+**2. Your personal catalog of every link you own.** Book on Amazon, HackerNoon article, podcast, Product Hunt launch — all in one organized place. Someone says "send me that"? Don't send it. Show it, they scan it, done.
+
+**3. Instant access to what you need right now.** Pin up to 5 links above the tabs. Heading to a book event — pin Amazon and Goodreads. Business meetup tomorrow — repin LinkedIn and Calendly. Your top row adapts to your day.
 
 ## Features
 
-- **QR code for every link** — LinkedIn, website, podcasts, socials, anything. Tap a card, show a large scannable code.
-- **Profile tabs** — group cards into tabs (Business / Personal / Hobby by default) and rename them however you like.
-- **Built-in editor** — tap Edit and make the card yours: name, bio, tabs, and links. Changes are saved only in your browser; nothing is uploaded anywhere.
-- **28 icons** — brand icons for popular platforms plus generic glyphs (link, app, video, doc, chat, star) for custom links.
-- **Installable app (PWA)** — add it to your phone's home screen and it behaves like a native app.
-- **Works offline** — once opened online, the card keeps working with no connection. QR codes are generated on-device, so everything scans even on dead conference Wi-Fi.
+- **QR code for every link** — tap a card, show a large scannable code.
+- **One-tap copy** — every link is also a text link; copy it into any chat instantly.
+- **Pinned favorites** — up to 5 links always on top; re-pin in two taps as your context changes.
+- **Tabs** — organize links into Business / Personal / Hobby (rename them however you like).
+- **Built-in editor** — open the demo, tap Edit, make it yours. Saved only in your browser; your data never leaves your device.
+- **28 icons** — brands plus generic glyphs for any custom link.
+- **Installable app (PWA), works offline** — QR codes are generated on-device, so everything scans even with zero connection.
 - **No login, no backend, no database** — a static page, deployed for free.
 
 ## Try It
 
 1. Open the demo on your phone.
 2. Tap any card and scan the QR code with another phone.
-3. Tap **Edit** to replace the demo profile with your own — it stays on your device.
-4. Add the page to your home screen for the full app experience.
+3. Tap the star on any card — it jumps to your pinned row.
+4. Tap **Edit** to replace the demo profile with your own — it stays on your device.
+5. Add the page to your home screen for the full app experience.
 
 ## Run Your Own
 
@@ -40,7 +50,7 @@ npm install
 npm run dev
 ```
 
-To make a permanent card with your own data, edit `src/data/profile.ts` (name, title, bio, tabs, and links), then deploy:
+To make a permanent card with your own data, edit `src/data/profile.ts` (name, title, bio, tabs, links, favorites), then deploy:
 
 1. Push the repository to GitHub.
 2. Import it at [vercel.com/new](https://vercel.com/new) — Next.js is detected automatically.
@@ -60,6 +70,6 @@ Next.js (App Router) · React · TypeScript · Tailwind CSS v4 · qrcode.react �
 
 ## About
 
-A small AI-assisted side project built by a marketing leader to solve a real networking problem.
+A small AI-assisted side project built by a marketing leader to solve a real everyday problem.
 
 Made by [Volodymyr Khomichenko](https://khomichenko.com/) — Tech B2B Marketing Strategist & Author.

@@ -6,7 +6,7 @@ import RegisterSW from "@/components/RegisterSW";
 
 const SITE_URL = "https://smart-networking.khomichenko.com";
 const DESCRIPTION =
-  "One mobile page with QR codes for all your professional links. Built for conferences, events and networking.";
+  "Every link you own, one scan away. Swap contacts anywhere, share anything without typing, and keep your go-to links pinned. Works offline, no login.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
