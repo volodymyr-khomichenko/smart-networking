@@ -105,6 +105,17 @@ export default function Home() {
 
       <footer className="mt-10 text-center text-xs text-ink-soft">
         Smart Networking — one page, all your links
+        <span className="block mt-1">
+          © {new Date().getFullYear()}{" "}
+          <a
+            href="https://khomichenko.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-line underline-offset-2 hover:text-lanyard"
+          >
+            Volodymyr Khomichenko
+          </a>
+        </span>
         {isCustom && <span className="block mt-1">Showing your local profile</span>}
       </footer>
 

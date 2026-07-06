@@ -64,3 +64,7 @@ Next.js (App Router) · React · TypeScript · Tailwind CSS v4 · qrcode.react �
 A small AI-assisted side project built by a marketing leader to solve a real everyday problem.
 
 Made by [Volodymyr Khomichenko](https://khomichenko.com/) — Tech B2B Marketing Strategist & Author.
+
+## License
+
+[MIT](LICENSE) — free to use and fork; the copyright notice must be kept in all copies.
