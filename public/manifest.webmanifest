@@ -1,7 +1,7 @@
 {
   "name": "Smart Networking",
   "short_name": "SmartNetwork",
-  "description": "Every link you own, one scan away. Swap contacts and share anything via QR.",
+  "description": "The networking app for fast offline link sharing. Every link as a QR code.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#eceef1",

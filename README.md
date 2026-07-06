@@ -1,6 +1,6 @@
 # Smart Networking
 
-Every link you own, one scan away. A mobile-first link hub for swapping contacts and sharing anything — at conferences, on the street, in any conversation.
+The networking app for fast offline link sharing. Online, sharing a link takes one click — offline it falls apart. Smart Networking keeps every link you own in one place, each one a QR code with one-tap copy.
 
 **Live demo:** https://smart-networking.khomichenko.com
 
@@ -14,13 +14,11 @@ It's not just conferences. It's every "oh, send me that link" moment:
 - You mention your book, your latest article, your podcast, your product launch — and promise to "send the link later." You won't. Neither will they ask twice.
 - You keep dozens of profiles across platforms, and the one you need is never the one you can find quickly.
 
-## The Solution — three jobs, one page
+## The Solution — two jobs, one page
 
 **1. Swap contacts in seconds, anywhere.** Ask "where are you?" and show the right QR — LinkedIn for business, Instagram or TikTok for everyone else. They scan, you're connected.
 
-**2. Your personal catalog of every link you own.** Book on Amazon, HackerNoon article, podcast, Product Hunt launch — all in one organized place. Someone says "send me that"? Don't send it. Show it, they scan it, done.
-
-**3. Instant access to what you need right now.** Pin up to 5 links above the tabs. Heading to a book event — pin Amazon and Goodreads. Business meetup tomorrow — repin LinkedIn and Calendly. Your top row adapts to your day.
+**2. Your offline vault for every link you own.** Your products, your projects, your contacts — one organized place. Someone says "send me that"? Don't send it. Show it, they scan it — or copy the link into any chat with one tap.
 
 ## Features
 
@@ -30,7 +28,8 @@ It's not just conferences. It's every "oh, send me that link" moment:
 - **Tabs** — organize links into Business / Personal / Hobby (rename them however you like).
 - **Built-in editor** — open the demo, tap Edit, make it yours. Saved only in your browser; your data never leaves your device.
 - **28 icons** — brands plus generic glyphs for any custom link.
-- **Installable app (PWA), works offline** — QR codes are generated on-device, so everything scans even with zero connection.
+- **A real app feel, no App Store** — installs on iOS & Android straight from the browser: home screen icon, full-screen, always up to date.
+- **Works offline** — QR codes are generated on-device, so everything scans even with zero connection.
 - **No login, no backend, no database** — a static page, deployed for free.
 
 ## Try It
@@ -59,14 +58,6 @@ To make a permanent card with your own data, edit `src/data/profile.ts` (name, t
 ## Tech Stack
 
 Next.js (App Router) · React · TypeScript · Tailwind CSS v4 · qrcode.react · Vercel
-
-## Roadmap
-
-- Dark mode
-- vCard download ("Save contact")
-- Native share sheet integration
-- Analytics-friendly links (UTM / short links)
-- NFC sharing workflow documentation
 
 ## About
 
