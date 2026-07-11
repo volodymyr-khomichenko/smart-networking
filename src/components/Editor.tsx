@@ -21,6 +21,11 @@ function clone(p: Profile): Profile {
   return JSON.parse(JSON.stringify(p));
 }
 
+/** Tap a filled field — the text gets selected, so typing replaces it. */
+const selectOnFocus = (
+  e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+) => e.currentTarget.select();
+
 export default function Editor({
   initial,
   isCustom,
@@ -28,7 +33,17 @@ export default function Editor({
   onReset,
   onClose,
 }: EditorProps) {
-  const [draft, setDraft] = useState<Profile>(() => clone(initial));
+  const [draft, setDraft] = useState<Profile>(() => {
+    const base = clone(initial);
+    if (!isCustom) {
+      // First-time edit of the demo: fields start empty, demo shows as placeholder
+      base.name = "";
+      base.title = "";
+      base.bio = "";
+      base.initials = "";
+    }
+    return base;
+  });
 
   const setField = (field: "name" | "title" | "bio" | "initials", v: string) =>
     setDraft((d) => ({ ...d, [field]: v }));
@@ -88,7 +103,9 @@ export default function Editor({
     const cleaned: Profile = {
       ...draft,
       name: draft.name.trim() || initial.name,
-      initials: (draft.initials.trim() || "SN").slice(0, 3).toUpperCase(),
+      initials: (draft.initials.trim() || initial.initials || "SN")
+        .slice(0, 3)
+        .toUpperCase(),
       tabs: draft.tabs.map((t, i) => ({
         ...t,
         label: t.label.trim() || initial.tabs[i]?.label || "Tab",
@@ -120,8 +137,9 @@ export default function Editor({
           </button>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-ink-soft">
-          Your changes are saved only in this browser on this device. Nothing
-          is uploaded anywhere.
+          Your changes are saved only in this browser on this device — nothing
+          is uploaded anywhere. Grey text is just a hint: start typing your own
+          details right over it.
         </p>
 
         {/* Profile fields */}
@@ -136,7 +154,8 @@ export default function Editor({
                 className={inputCls}
                 value={draft.name}
                 onChange={(e) => setField("name", e.target.value)}
-                placeholder="Your name"
+                onFocus={selectOnFocus}
+                placeholder={initial.name}
               />
             </div>
             <div>
@@ -149,7 +168,8 @@ export default function Editor({
                 value={draft.initials}
                 maxLength={3}
                 onChange={(e) => setField("initials", e.target.value)}
-                placeholder="SN"
+                onFocus={selectOnFocus}
+                placeholder={initial.initials}
               />
             </div>
           </div>
@@ -162,7 +182,8 @@ export default function Editor({
               className={inputCls}
               value={draft.title}
               onChange={(e) => setField("title", e.target.value)}
-              placeholder="Your role"
+              onFocus={selectOnFocus}
+              placeholder={initial.title}
             />
           </div>
           <div className="mt-3">
@@ -174,7 +195,8 @@ export default function Editor({
               className={`${inputCls} min-h-20 resize-y`}
               value={draft.bio}
               onChange={(e) => setField("bio", e.target.value)}
-              placeholder="One or two sentences about you"
+              onFocus={selectOnFocus}
+              placeholder={initial.bio}
             />
           </div>
         </section>
@@ -190,6 +212,7 @@ export default function Editor({
               className={inputCls}
               value={t.label}
               onChange={(e) => setTabLabel(t.id, e.target.value)}
+              onFocus={selectOnFocus}
               aria-label={`Tab name`}
             />
           ))}
@@ -216,6 +239,7 @@ export default function Editor({
                   className={inputCls}
                   value={c.label}
                   onChange={(e) => setContact(idx, { label: e.target.value })}
+                  onFocus={selectOnFocus}
                   placeholder="Card name (e.g. LinkedIn)"
                   aria-label="Card name"
                 />
@@ -248,6 +272,7 @@ export default function Editor({
                   className={inputCls}
                   value={c.value}
                   onChange={(e) => setContact(idx, { value: e.target.value })}
+                  onFocus={selectOnFocus}
                   placeholder="https://…"
                   aria-label="Link"
                   inputMode="url"
@@ -258,6 +283,7 @@ export default function Editor({
                   className={inputCls}
                   value={c.hint}
                   onChange={(e) => setContact(idx, { hint: e.target.value })}
+                  onFocus={selectOnFocus}
                   placeholder="Short subtitle (optional)"
                   aria-label="Subtitle"
                 />
