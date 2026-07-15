@@ -207,7 +207,7 @@ export const profile: Profile = {
       hint: "Behind Rapid Growth in short video",
       type: "url",
       modes: ["hobby"],
-      value: "https://www.tiktok.com/@behind.rapid.growth",
+      value: "https://www.tiktok.com/@volodymyr.khomichenko",
     },
     {
       id: "facebook",

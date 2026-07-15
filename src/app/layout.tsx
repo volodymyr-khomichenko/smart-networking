@@ -3,6 +3,7 @@ import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/inter";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
+import Analytics from "@/components/Analytics";
 
 const SITE_URL = "https://smart-networking.khomichenko.com";
 const DESCRIPTION =
@@ -54,6 +55,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <RegisterSW />
+        <Analytics />
         {children}
       </body>
     </html>
