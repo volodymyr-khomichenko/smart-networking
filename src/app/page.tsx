@@ -7,6 +7,7 @@ import ModeSwitcher from "@/components/ModeSwitcher";
 import PinnedBar from "@/components/PinnedBar";
 import QRModal from "@/components/QRModal";
 import Editor from "@/components/Editor";
+import InstallHint from "@/components/InstallHint";
 import { Contact, Mode, Profile, profile as demoProfile } from "@/data/profile";
 import { clearStoredProfile, loadStoredProfile, storeProfile } from "@/lib/storage";
 
@@ -126,6 +127,8 @@ export default function Home() {
           onClose={() => setActive(null)}
         />
       )}
+
+      {!editing && !active && <InstallHint />}
 
       {editing && (
         <Editor
