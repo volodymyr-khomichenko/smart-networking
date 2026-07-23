@@ -22,7 +22,6 @@ export default function InstallHint() {
   const [iosHint, setIosHint] = useState(false);
 
   useEffect(() => {
-    // Already dismissed, or running as an installed app → never show
     const dismissed = (() => {
       try {
         return localStorage.getItem(DISMISS_KEY) === "1";
@@ -32,7 +31,6 @@ export default function InstallHint() {
     })();
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      // iOS Safari
       (window.navigator as unknown as { standalone?: boolean }).standalone === true;
     if (dismissed || standalone) return;
 
@@ -43,7 +41,6 @@ export default function InstallHint() {
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
 
-    // iOS never fires beforeinstallprompt → show a manual hint after a short delay
     const isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
     const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(
       window.navigator.userAgent

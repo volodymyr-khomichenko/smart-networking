@@ -28,7 +28,6 @@ export default function QRModal({ contact, profile, onClose }: QRModalProps) {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
-    // Web Share API is available mostly on mobile
     setCanShare(typeof navigator !== "undefined" && !!navigator.share);
     return () => {
       document.removeEventListener("keydown", onKey);
@@ -60,7 +59,7 @@ export default function QRModal({ contact, profile, onClose }: QRModalProps) {
     try {
       await navigator.share({ title: contact.label, url: contact.value });
     } catch {
-      /* user dismissed the share sheet — nothing to do */
+      /* user dismissed the share sheet */
     }
   };
 

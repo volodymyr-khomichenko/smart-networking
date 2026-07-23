@@ -65,6 +65,40 @@ export const BRAND_ICON_PATHS: Record<string, string> = {
     "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
 };
 
+/** Guess a brand icon from a URL or email so quick-added cards look right. */
+export function iconForValue(value: string): string {
+  const v = value.toLowerCase();
+  if (v.includes("@") && !v.startsWith("http")) return "email";
+  const rules: [string, string][] = [
+    ["linkedin.com", "linkedin"],
+    ["instagram.com", "instagram"],
+    ["tiktok.com", "tiktok"],
+    ["youtu", "youtube"],
+    ["spotify.com", "spotify"],
+    ["podcasts.apple", "apple-podcasts"],
+    ["x.com", "x"],
+    ["twitter.com", "x"],
+    ["facebook.com", "facebook"],
+    ["fb.com", "facebook"],
+    ["github.com", "github"],
+    ["medium.com", "medium"],
+    ["substack", "substack"],
+    ["amazon.", "amazon"],
+    ["goodreads.com", "goodreads"],
+    ["producthunt.com", "producthunt"],
+    ["pinterest.", "pinterest"],
+    ["bsky.app", "bluesky"],
+    ["mastodon", "mastodon"],
+    ["threads.", "threads"],
+    ["calendly.com", "calendly"],
+    ["hackernoon.com", "hackernoon"],
+  ];
+  for (const [needle, icon] of rules) {
+    if (v.includes(needle)) return icon;
+  }
+  return "link";
+}
+
 export function BrandIcon({ id, className }: { id: string; className?: string }) {
   const d = BRAND_ICON_PATHS[id] ?? BRAND_ICON_PATHS["link"];
   return (

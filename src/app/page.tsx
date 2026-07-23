@@ -1,71 +1,122 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  Contact,
+  Mode,
+  Profile,
+  profile as demoProfile,
+} from "@/data/profile";
+import {
+  clearStoredProfile,
+  loadStoredProfile,
+  storeProfile,
+} from "@/lib/storage";
 import ProfileCard from "@/components/ProfileCard";
-import ContactCard from "@/components/ContactCard";
-import ModeSwitcher from "@/components/ModeSwitcher";
 import PinnedBar from "@/components/PinnedBar";
+import ModeSwitcher from "@/components/ModeSwitcher";
+import ContactCard from "@/components/ContactCard";
+import ArchivedSection from "@/components/ArchivedSection";
 import QRModal from "@/components/QRModal";
 import Editor from "@/components/Editor";
 import InstallHint from "@/components/InstallHint";
-import { Contact, Mode, Profile, profile as demoProfile } from "@/data/profile";
-import { clearStoredProfile, loadStoredProfile, storeProfile } from "@/lib/storage";
+import QuickAdd from "@/components/QuickAdd";
+
+const MAX_FAVORITES = 5;
 
 export default function Home() {
   const [profile, setProfile] = useState<Profile>(demoProfile);
   const [isCustom, setIsCustom] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [active, setActive] = useState<Contact | null>(null);
   const [mode, setMode] = useState<Mode["id"]>("all");
+  const [active, setActive] = useState<Contact | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [editingCard, setEditingCard] = useState<Contact | null>(null);
 
-  // Load the visitor's own profile from this browser, if they saved one
+  // Load a locally saved profile (if the visitor made the card theirs)
   useEffect(() => {
-    const saved = loadStoredProfile();
-    if (saved) {
-      setProfile(saved);
+    const stored = loadStoredProfile();
+    if (stored) {
+      setProfile(stored);
       setIsCustom(true);
     }
   }, []);
 
-  const pinned = useMemo(
-    () => profile.contacts.filter((c) => c.favorite).slice(0, 5),
-    [profile]
-  );
-
-  const tabList = useMemo<Mode[]>(
-    () => [{ id: "all", label: "All" }, ...profile.tabs],
-    [profile]
+  const tabList: Mode[] = useMemo(
+    () => [
+      { id: "all", label: "All" },
+      ...profile.tabs.map((t) => ({ id: t.id, label: t.label })),
+    ],
+    [profile.tabs]
   );
 
   const visibleContacts = useMemo(
     () =>
-      mode === "all"
+      (mode === "all"
         ? profile.contacts
-        : profile.contacts.filter((c) => c.modes.includes(mode as never)),
-    [mode, profile]
+        : profile.contacts.filter((c) => c.modes.includes(mode))
+      ).filter((c) => !c.archived),
+    [profile.contacts, mode]
   );
 
-  const handleToggleFavorite = (contact: Contact) => {
-    const pinnedCount = profile.contacts.filter((c) => c.favorite).length;
-    if (!contact.favorite && pinnedCount >= 5) {
-      alert("You can pin up to 5 links.");
-      return;
-    }
-    const next: Profile = {
-      ...profile,
-      contacts: profile.contacts.map((c) =>
-        c.id === contact.id ? { ...c, favorite: !c.favorite } : c
-      ),
-    };
+  const archivedContacts = useMemo(
+    () => profile.contacts.filter((c) => c.archived),
+    [profile.contacts]
+  );
+
+  const pinned = useMemo(
+    () =>
+      profile.contacts
+        .filter((c) => c.favorite && !c.archived)
+        .slice(0, MAX_FAVORITES),
+    [profile.contacts]
+  );
+
+  const persist = (next: Profile) => {
     setProfile(next);
-    setIsCustom(true);
     storeProfile(next);
+    setIsCustom(true);
   };
 
-  const handleSave = (p: Profile) => {
-    storeProfile(p);
-    setProfile(p);
-    setIsCustom(true);
+  const patchContact = (id: string, patch: Partial<Contact>) =>
+    persist({
+      ...profile,
+      contacts: profile.contacts.map((c) =>
+        c.id === id ? { ...c, ...patch } : c
+      ),
+    });
+
+  const handleToggleFavorite = (contact: Contact) => {
+    const count = profile.contacts.filter(
+      (c) => c.favorite && !c.archived
+    ).length;
+    if (!contact.favorite && count >= MAX_FAVORITES) return;
+    patchContact(contact.id, { favorite: !contact.favorite });
+  };
+
+  const handleArchive = (contact: Contact) =>
+    patchContact(contact.id, { archived: true });
+
+  const handleRestore = (contact: Contact) =>
+    patchContact(contact.id, { archived: false });
+
+  const handleQuickSubmit = (contact: Contact) => {
+    if (editingCard) {
+      persist({
+        ...profile,
+        contacts: profile.contacts.map((c) =>
+          c.id === contact.id ? contact : c
+        ),
+      });
+      setEditingCard(null);
+    } else {
+      persist({ ...profile, contacts: [...profile.contacts, contact] });
+      setMode("all");
+    }
+  };
+
+  const handleSave = (next: Profile) => {
+    persist(next);
     setEditing(false);
   };
 
@@ -74,40 +125,47 @@ export default function Home() {
     setProfile(demoProfile);
     setIsCustom(false);
     setEditing(false);
+    setMode("all");
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-10 pt-6">
-      <ProfileCard profile={profile} onEdit={() => setEditing(true)} />
+    <main className="mx-auto min-h-dvh w-full max-w-md px-4 pb-24 pt-6">
+      <ProfileCard
+        profile={profile}
+        onEdit={() => setEditing(true)}
+        onAdd={() => setAdding(true)}
+      />
 
       <PinnedBar contacts={pinned} onSelect={setActive} />
 
       <ModeSwitcher modes={tabList} active={mode} onChange={setMode} />
 
-      <h2 className="mt-6 mb-3 px-1 text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">
+      <h2 className="mt-6 mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-ink-soft">
         Tap a card to show its QR code
       </h2>
 
-      <div className="flex flex-col gap-3">
+      <div className="space-y-3">
         {visibleContacts.map((contact) => (
           <ContactCard
             key={contact.id}
             contact={contact}
             onSelect={setActive}
             onToggleFavorite={handleToggleFavorite}
+            onArchive={handleArchive}
+            onEdit={setEditingCard}
           />
         ))}
-        {visibleContacts.length === 0 && (
-          <p className="rounded-xl border border-dashed border-line bg-card px-4 py-6 text-center text-sm text-ink-soft">
-            No cards in this tab yet. Tap Edit to add some.
-          </p>
-        )}
       </div>
+
+      <ArchivedSection
+        contacts={archivedContacts}
+        onRestore={handleRestore}
+      />
 
       <footer className="mt-10 text-center text-xs text-ink-soft">
         Smart Networking — one page, all your links
         <span className="block mt-1">
-          © {new Date().getFullYear()}{" "}
+          © {new Date().getFullYear()} Created by{" "}
           <a
             href="https://khomichenko.com/"
             target="_blank"
@@ -120,15 +178,18 @@ export default function Home() {
         {isCustom && <span className="block mt-1">Showing your local profile</span>}
       </footer>
 
-      {active && (
-        <QRModal
-          contact={active}
-          profile={profile}
-          onClose={() => setActive(null)}
-        />
-      )}
+      {!editing && !active && !adding && !editingCard && <InstallHint />}
 
-      {!editing && !active && <InstallHint />}
+      <QuickAdd
+        open={adding || editingCard !== null}
+        editContact={editingCard}
+        tabs={profile.tabs}
+        onSubmit={handleQuickSubmit}
+        onClose={() => {
+          setAdding(false);
+          setEditingCard(null);
+        }}
+      />
 
       {editing && (
         <Editor
@@ -137,6 +198,14 @@ export default function Home() {
           onSave={handleSave}
           onReset={handleReset}
           onClose={() => setEditing(false)}
+        />
+      )}
+
+      {active && (
+        <QRModal
+          contact={active}
+          profile={profile}
+          onClose={() => setActive(null)}
         />
       )}
     </main>

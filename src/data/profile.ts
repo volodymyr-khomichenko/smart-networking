@@ -36,6 +36,8 @@ export interface Contact {
   icon?: string;
   /** Pinned above the tabs (up to 5 cards) */
   favorite?: boolean;
+  /** Archived cards are hidden from the main list (see "Archived cards" at the bottom) */
+  archived?: boolean;
   /** Which profile modes this card belongs to */
   modes: ModeId[];
   /**
@@ -71,19 +73,19 @@ export const profile: Profile = {
     {
       id: "linkedin",
       favorite: true,
-      modes: ["business"],
       label: "LinkedIn",
       hint: "Let's connect professionally",
       type: "url",
+      modes: ["business"],
       value: "https://www.linkedin.com/in/volodymyrkh/",
     },
     {
       id: "website",
       favorite: true,
-      modes: ["hobby"],
       label: "Website",
       hint: "My personal hub — book, podcast, articles",
       type: "url",
+      modes: ["hobby"],
       value: "https://khomichenko.com/",
     },
     {
@@ -96,93 +98,93 @@ export const profile: Profile = {
     },
     {
       id: "substack",
-      favorite: true,
-      modes: ["hobby"],
       label: "Substack",
       hint: "My newsletter: Rapid Growth",
       type: "url",
+      modes: ["hobby"],
       value: "https://substack.com/@rapidgrowth",
     },
     {
       id: "apple-podcasts",
-      modes: ["hobby"],
       label: "Apple Podcasts",
       hint: "My podcast on Apple Podcasts",
       type: "url",
+      modes: ["hobby"],
       value:
         "https://podcasts.apple.com/us/podcast/the-marketing-behind-rapid-growth/id6783273819",
     },
     {
       id: "spotify",
-      modes: ["hobby"],
       label: "Spotify",
       hint: "My podcast on Spotify",
       type: "url",
+      modes: ["hobby"],
       value: "https://open.spotify.com/show/033xOGviIOxl8R0FtlNnen",
     },
     {
       id: "youtube",
-      modes: ["hobby"],
       label: "YouTube",
       hint: "Podcast episodes in video",
       type: "url",
+      modes: ["hobby"],
       value:
         "https://www.youtube.com/playlist?list=PLE1kZdLcUjyJH8Vt221NXKmYFOB7az_YU",
     },
     {
       id: "x",
-      modes: ["business"],
       label: "X / Twitter",
       hint: "Daily takes on B2B marketing",
       type: "url",
+      modes: ["business"],
       value: "https://x.com/V_Khomichenko",
     },
     {
       id: "medium",
-      modes: ["hobby"],
       label: "Medium",
       hint: "My marketing articles",
       type: "url",
+      modes: ["hobby"],
       value: "https://medium.com/@Khomichenko",
     },
     {
       id: "hackernoon",
-      modes: ["hobby"],
       label: "HackerNoon",
       hint: "My tech & growth stories",
       type: "url",
+      modes: ["hobby"],
       value: "https://hackernoon.com/u/khomichenko",
     },
     {
       id: "amazon",
-      modes: ["hobby"],
+      favorite: true,
       label: "Amazon",
       hint: "My book on Amazon",
       type: "url",
+      modes: ["hobby"],
       value: "https://amazon.com/author/khomichenko",
     },
     {
       id: "goodreads",
-      modes: ["hobby"],
       label: "Goodreads",
       hint: "My author page on Goodreads",
       type: "url",
+      modes: ["hobby"],
       value: "https://www.goodreads.com/khomichenko",
     },
     {
       id: "producthunt",
-      modes: ["hobby"],
       label: "Product Hunt",
       hint: "My launches & product picks",
       type: "url",
+      modes: ["hobby"],
       value: "https://www.producthunt.com/@khomichenko",
     },
     {
       id: "github",
-      modes: ["hobby"],
       label: "GitHub",
       hint: "My side projects (like this one)",
       type: "url",
+      modes: ["hobby"],
       value: "https://github.com/volodymyr-khomichenko",
     },
     {
@@ -249,6 +251,24 @@ export const profile: Profile = {
       icon: "app",
       modes: ["hobby"],
       value: "https://smart-networking.khomichenko.com",
+    },
+    {
+      id: "speaker-copilot",
+      label: "Speaker Copilot",
+      hint: "My AI-built side project",
+      type: "url",
+      icon: "app",
+      modes: ["hobby"],
+      value: "https://speaker-copilot.khomichenko.com/",
+    },
+    {
+      id: "fast-comment",
+      label: "Fast Comment",
+      hint: "My AI-built side project",
+      type: "url",
+      icon: "chat",
+      modes: ["hobby"],
+      value: "https://fast-comment.khomichenko.com/",
     },
   ],
 };

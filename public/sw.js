@@ -1,10 +1,12 @@
-// Smart Networking service worker: cache-first with background refresh.
-// Once the page has been opened online, it keeps working offline.
-const CACHE = "smart-networking-v4";
+// Smart Networking — offline support.
+// Cache-first for same-origin GET requests with background refresh.
+const CACHE = "smart-networking-v6";
+const PRECACHE = ["/", "/manifest.webmanifest", "/icon-192.png"];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(["/", "/manifest.webmanifest", "/icon-192.png"])));
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -20,7 +22,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET" || !request.url.startsWith(self.location.origin)) {
+  if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) {
     return;
   }
   event.respondWith(
@@ -28,8 +30,8 @@ self.addEventListener("fetch", (event) => {
       const network = fetch(request)
         .then((response) => {
           if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, clone));
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy));
           }
           return response;
         })
