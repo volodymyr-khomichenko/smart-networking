@@ -28,7 +28,7 @@ const selectOnFocus = (
 ) => e.currentTarget.select();
 
 const inputCls =
-  "w-full rounded-lg border border-line bg-card px-3 py-2.5 text-sm outline-none transition-colors focus:border-lanyard placeholder:text-ink-soft/60";
+  "w-full rounded-lg border border-line bg-card px-3 py-2.5 text-base outline-none transition-colors focus:border-lanyard placeholder:text-ink-soft/60";
 const labelCls =
   "mb-1 block text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-ink-soft";
 
