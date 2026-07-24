@@ -24,7 +24,7 @@ It's not just conferences. It's every "oh, send me that link" moment:
 
 - **QR code for every link** — tap a card, show a large scannable code.
 - **One-tap copy** — every link is also a text link; copy it into any chat instantly.
-- **Quick add** — the "+" button in the header adds a new link in seconds; the card icon is picked automatically from the address.
+- **Quick add** — the "+" button in the header adds a new card in seconds: a link, an email, or a phone number, with an icon (auto-detected, or pick your own) and a short description. New cards appear at the top of the list.
 - **Swipe to manage** — swipe a card right to archive it, left to edit it on the spot. Archived cards wait under a quiet strip at the bottom until you restore them; deleting is deliberately kept in the full editor only, so nothing is lost by accident.
 - **Native share** — send any link through your phone's share sheet.
 - **Pinned favorites** — up to 5 links always on top; re-pin in two taps as your context changes.
@@ -41,7 +41,7 @@ It's not just conferences. It's every "oh, send me that link" moment:
 2. Tap any card and scan the QR code with another phone.
 3. Tap the star on any card — it jumps to your pinned row.
 4. Tap **Edit** to replace the demo profile with your own — it stays on your device.
-5. Tap the blue **+** in the header to add any link in seconds.
+5. Tap the blue **+** in the header to add a link, email, or phone number in seconds.
 6. Swipe any card right to archive it, or left to edit it in place.
 7. Add the page to your home screen for the full app experience.
 

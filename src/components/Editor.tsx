@@ -299,9 +299,19 @@ export default function Editor({
                   onChange={(e) => setContact(idx, { value: e.target.value })}
                   onFocus={selectOnFocus}
                   placeholder={
-                    c.type === "email" ? "you@example.com" : "https://…"
+                    c.type === "email"
+                      ? "you@example.com"
+                      : c.type === "phone"
+                        ? "+1 555 123 4567"
+                        : "https://…"
                   }
-                  inputMode={c.type === "email" ? "email" : "url"}
+                  inputMode={
+                    c.type === "email"
+                      ? "email"
+                      : c.type === "phone"
+                        ? "tel"
+                        : "url"
+                  }
                 />
               )}
               <input

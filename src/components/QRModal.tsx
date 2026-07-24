@@ -63,7 +63,11 @@ export default function QRModal({ contact, profile, onClose }: QRModalProps) {
     }
   };
 
-  const showActions = contact.type === "url" || contact.type === "email";
+  const showActions =
+    contact.type === "url" ||
+    contact.type === "email" ||
+    contact.type === "phone";
+  const canShareThis = canShare && contact.type === "url";
 
   return (
     <div
@@ -81,7 +85,9 @@ export default function QRModal({ contact, profile, onClose }: QRModalProps) {
         <p className="mt-1 text-sm text-ink-soft">
           {contact.type === "vcard"
             ? "Scan to save my contact"
-            : "Scan with your phone camera"}
+            : contact.type === "phone"
+              ? "Scan to call or save the number"
+              : "Scan with your phone camera"}
         </p>
 
         <div className="relative mt-8 p-5">
@@ -102,27 +108,40 @@ export default function QRModal({ contact, profile, onClose }: QRModalProps) {
 
         {showActions && (
           <>
-            <button
-              type="button"
-              onClick={copyValue}
-              aria-label={`Copy ${contact.label} link`}
-              className="mt-4 flex max-w-full items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs text-ink-soft transition-colors hover:border-lanyard hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
-            >
-              <span className="min-w-0 truncate">
-                {copied ? "Copied to clipboard!" : contact.value}
-              </span>
-              {copied ? (
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4 shrink-0 text-lanyard">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4 shrink-0">
-                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-                </svg>
-              )}
-            </button>
+            <div className="mt-4 flex max-w-full items-center gap-1 rounded-lg border border-line py-1 pl-3 pr-1">
+              <a
+                href={value}
+                target={contact.type === "url" ? "_blank" : undefined}
+                rel={contact.type === "url" ? "noopener noreferrer" : undefined}
+                aria-label={`Open ${contact.label}`}
+                className="min-w-0 truncate py-1.5 text-xs text-ink-soft underline decoration-line underline-offset-2 transition-colors hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+              >
+                {contact.value}
+              </a>
+              <button
+                type="button"
+                onClick={copyValue}
+                aria-label={`Copy ${contact.label}`}
+                title={copied ? "Copied!" : "Copy"}
+                className={`shrink-0 rounded-md p-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard ${
+                  copied
+                    ? "text-lanyard"
+                    : "text-ink-soft hover:bg-lanyard-soft hover:text-lanyard"
+                }`}
+              >
+                {copied ? (
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4">
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                  </svg>
+                )}
+              </button>
+            </div>
 
-            {canShare && (
+            {canShareThis && (
               <button
                 type="button"
                 onClick={shareValue}

@@ -5,7 +5,7 @@
 // Update the values below whenever your links change.
 // ---------------------------------------------------------------------------
 
-export type ContactType = "url" | "email" | "vcard";
+export type ContactType = "url" | "email" | "phone" | "vcard";
 
 export type ModeId = "business" | "personal" | "hobby";
 
@@ -43,6 +43,7 @@ export interface Contact {
   /**
    * For "url":   full link, e.g. https://linkedin.com/in/you
    * For "email": plain address, e.g. you@example.com
+   * For "phone": phone number, e.g. +380 12 345 6789
    * For "vcard": leave empty — the vCard is generated from the profile below
    */
   value: string;
@@ -301,6 +302,9 @@ export function qrValueFor(contact: Contact, p: Profile): string {
   switch (contact.type) {
     case "email":
       return `mailto:${contact.value}`;
+    case "phone":
+      // tel: URIs are safest without spaces or dashes
+      return `tel:${contact.value.replace(/[\s\-()]/g, "")}`;
     case "vcard":
       return buildVCard(p);
     default:

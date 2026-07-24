@@ -110,7 +110,8 @@ export default function Home() {
       });
       setEditingCard(null);
     } else {
-      persist({ ...profile, contacts: [...profile.contacts, contact] });
+      // New cards go to the top of the list
+      persist({ ...profile, contacts: [contact, ...profile.contacts] });
       setMode("all");
     }
   };
