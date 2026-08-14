@@ -36,8 +36,8 @@ export default function ProfileCard({ profile, onEdit, onAdd }: ProfileCardProps
           <button
             type="button"
             onClick={onAdd}
-            aria-label="Add a link"
-            title="Add a link"
+            aria-label="Add a card"
+            title="Add a card"
             className="flex h-8 w-8 items-center justify-center rounded-full bg-lanyard text-white shadow-[0_4px_12px_rgba(47,82,224,0.35)] transition-transform hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-5 w-5">

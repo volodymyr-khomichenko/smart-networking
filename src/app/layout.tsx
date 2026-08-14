@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/inter";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
-import Analytics from "@/components/Analytics";
 
 const SITE_URL = "https://smart-networking.khomichenko.com";
 const TITLE = "Smart Networking — Volodymyr Khomichenko";
@@ -57,8 +57,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <RegisterSW />
-        <Analytics />
         {children}
+        {/* Cookieless, privacy-friendly analytics (Vercel Web Analytics).
+            No cookies, no personal identifiers — no consent banner needed. */}
+        <Analytics />
       </body>
     </html>
   );

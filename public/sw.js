@@ -1,6 +1,6 @@
 // Smart Networking — offline support.
 // Cache-first for same-origin GET requests with background refresh.
-const CACHE = "smart-networking-v9";
+const CACHE = "smart-networking-v10";
 const PRECACHE = ["/", "/manifest.webmanifest", "/icon-192.png"];
 
 self.addEventListener("install", (event) => {

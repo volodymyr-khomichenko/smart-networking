@@ -4,6 +4,8 @@ The networking app for fast offline link sharing. Online, sharing a link takes o
 
 **Live demo:** https://smart-networking.khomichenko.com
 
+🚀 **Launched on [Product Hunt](https://www.producthunt.com/products/smart-networking)** — feedback welcome!
+
 ![Smart Networking](public/og.png)
 
 ## The Problem
@@ -23,17 +25,18 @@ It's not just conferences. It's every "oh, send me that link" moment:
 ## Features
 
 - **QR code for every link** — tap a card, show a large scannable code.
-- **One-tap copy** — every link is also a text link; copy it into any chat instantly.
+- **One-tap copy** — every link is also a text link; copy it into any chat instantly, or tap it to open.
 - **Quick add** — the "+" button in the header adds a new card in seconds: a link, an email, or a phone number, with an icon (auto-detected, or pick your own) and a short description. New cards appear at the top of the list.
 - **Swipe to manage** — swipe a card right to archive it, left to edit it on the spot. Archived cards wait under a quiet strip at the bottom until you restore them; deleting is deliberately kept in the full editor only, so nothing is lost by accident.
 - **Native share** — send any link through your phone's share sheet.
 - **Pinned favorites** — up to 5 links always on top; re-pin in two taps as your context changes.
 - **Tabs** — organize links into Business / Personal / Hobby (rename them however you like).
 - **Built-in editor** — open the demo, tap Edit, make it yours. Saved only in your browser; your data never leaves your device.
-- **28 icons** — brands plus generic glyphs for any custom link.
+- **30 icons** — brands plus generic glyphs for any custom link.
 - **A real app feel, no App Store** — installs on iOS & Android straight from the browser: home screen icon, full-screen, always up to date.
 - **Works offline** — QR codes are generated on-device, so everything scans even with zero connection.
 - **No login, no backend, no database** — a static page, deployed for free.
+- **Privacy-friendly analytics** — cookieless Vercel Web Analytics: no cookies, no personal identifiers, no consent banner needed. In line with the product's privacy-first design.
 
 ## Try It
 
@@ -59,6 +62,7 @@ To make a permanent card with your own data, edit `src/data/profile.ts` (name, t
 1. Push the repository to GitHub.
 2. Import it at [vercel.com/new](https://vercel.com/new) — Next.js is detected automatically.
 3. Every `git push` redeploys the site.
+4. Optional: enable Web Analytics in your Vercel project dashboard (cookieless, free tier available).
 
 ## Tech Stack
 

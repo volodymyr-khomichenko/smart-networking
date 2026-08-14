@@ -32,8 +32,8 @@ const TYPE_META: Record<
 };
 
 /**
- * Quick "Add a link" sheet (the + button in the profile header) and the
- * quick "Edit link" sheet (swipe a card left). Supports links, emails and
+ * Quick "Add a card" sheet (the + button in the profile header) and the
+ * quick "Edit card" sheet (swipe a card left). Supports links, emails and
  * phone numbers; the icon is auto-detected from the address but can be
  * overridden manually.
  */
