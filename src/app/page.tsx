@@ -21,6 +21,7 @@ import QRModal from "@/components/QRModal";
 import Editor from "@/components/Editor";
 import InstallHint from "@/components/InstallHint";
 import QuickAdd from "@/components/QuickAdd";
+import CopySheet from "@/components/CopySheet";
 
 const MAX_FAVORITES = 5;
 
@@ -32,6 +33,7 @@ export default function Home() {
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
   const [editingCard, setEditingCard] = useState<Contact | null>(null);
+  const [copying, setCopying] = useState(false);
 
   // Load a locally saved profile (if the visitor made the card theirs)
   useEffect(() => {
@@ -135,6 +137,7 @@ export default function Home() {
         profile={profile}
         onEdit={() => setEditing(true)}
         onAdd={() => setAdding(true)}
+        onCopy={() => setCopying(true)}
       />
 
       <PinnedBar contacts={pinned} onSelect={setActive} />
@@ -179,7 +182,7 @@ export default function Home() {
         {isCustom && <span className="block mt-1">Showing your local profile</span>}
       </footer>
 
-      {!editing && !active && !adding && !editingCard && <InstallHint />}
+      {!editing && !active && !adding && !editingCard && !copying && <InstallHint />}
 
       <QuickAdd
         open={adding || editingCard !== null}
@@ -191,6 +194,17 @@ export default function Home() {
           setEditingCard(null);
         }}
       />
+
+      {copying && (
+        <CopySheet
+          profile={profile}
+          onClose={() => setCopying(false)}
+          onEdit={() => {
+            setCopying(false);
+            setEditing(true);
+          }}
+        />
+      )}
 
       {editing && (
         <Editor

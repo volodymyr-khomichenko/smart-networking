@@ -4,7 +4,7 @@
 // saved only in their browser (localStorage), never sent anywhere.
 // ---------------------------------------------------------------------------
 
-import { DEFAULT_TABS, Profile } from "@/data/profile";
+import { DEFAULT_TABS, Profile, splitName } from "@/data/profile";
 
 const KEY = "smart-networking-profile-v1";
 
@@ -19,6 +19,13 @@ export function loadStoredProfile(): Profile | null {
     if (!Array.isArray(profile.tabs) || profile.tabs.length === 0) {
       profile.tabs = JSON.parse(JSON.stringify(DEFAULT_TABS));
     }
+    // Older saved profiles predate the form-copy fields. Same storage key.
+    if (typeof profile.firstName !== "string" || typeof profile.lastName !== "string") {
+      const split = splitName(profile.name || "");
+      if (typeof profile.firstName !== "string") profile.firstName = split.firstName;
+      if (typeof profile.lastName !== "string") profile.lastName = split.lastName;
+    }
+    if (typeof profile.company !== "string") profile.company = "";
     return profile;
   } catch {
     return null;

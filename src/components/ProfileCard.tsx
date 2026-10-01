@@ -4,9 +4,10 @@ interface ProfileCardProps {
   profile: Profile;
   onEdit?: () => void;
   onAdd?: () => void;
+  onCopy?: () => void;
 }
 
-export default function ProfileCard({ profile, onEdit, onAdd }: ProfileCardProps) {
+export default function ProfileCard({ profile, onEdit, onAdd, onCopy }: ProfileCardProps) {
   return (
     <section
       aria-label="Profile"
@@ -56,12 +57,28 @@ export default function ProfileCard({ profile, onEdit, onAdd }: ProfileCardProps
             {profile.name}
           </h1>
           <p className="text-sm font-medium text-lanyard">{profile.title}</p>
+          {profile.company ? (
+            <p className="truncate text-sm text-ink-soft">{profile.company}</p>
+          ) : null}
         </div>
       </div>
 
       <p className="mt-4 text-sm leading-relaxed text-ink-soft">
         {profile.bio}
       </p>
+
+      {onCopy && (
+        <button
+          type="button"
+          onClick={onCopy}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-paper px-4 py-3 font-display text-sm font-semibold text-ink transition-colors hover:border-lanyard hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4">
+            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+          </svg>
+          Copy for forms
+        </button>
+      )}
     </section>
   );
 }

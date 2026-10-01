@@ -6,6 +6,7 @@ import {
   ContactType,
   ModeId,
   Profile,
+  splitName,
   Tab,
 } from "@/data/profile";
 import { BRAND_ICON_PATHS, BrandIcon } from "@/components/icons";
@@ -47,6 +48,9 @@ export default function Editor({
     if (!isCustom) {
       // First-time edit of the demo: fields start empty, demo shows as placeholder
       base.name = "";
+      base.firstName = "";
+      base.lastName = "";
+      base.company = "";
       base.title = "";
       base.bio = "";
       base.initials = "";
@@ -60,9 +64,33 @@ export default function Editor({
   );
 
   const setField = (
-    field: "name" | "title" | "bio" | "initials",
+    field: "name" | "title" | "bio" | "initials" | "company",
     value: string
   ) => setDraft((d) => ({ ...d, [field]: value }));
+
+  const setFirstName = (value: string) =>
+    setDraft((d) => ({
+      ...d,
+      firstName: value,
+      name: [value.trim(), d.lastName.trim()].filter(Boolean).join(" "),
+    }));
+
+  const setLastName = (value: string) =>
+    setDraft((d) => ({
+      ...d,
+      lastName: value,
+      name: [d.firstName.trim(), value.trim()].filter(Boolean).join(" "),
+    }));
+
+  const setFullName = (value: string) => {
+    const split = splitName(value);
+    setDraft((d) => ({
+      ...d,
+      name: value,
+      firstName: split.firstName,
+      lastName: split.lastName,
+    }));
+  };
 
   const setTabLabel = (id: Tab["id"], label: string) =>
     setDraft((d) => ({
@@ -110,9 +138,17 @@ export default function Editor({
     });
 
   const handleSave = () => {
+    const typedName = draft.name.trim();
+    const name = typedName || initial.name;
+    const split = splitName(name);
+    const firstName = draft.firstName.trim() || split.firstName;
+    const lastName = draft.lastName.trim() || split.lastName;
     const cleaned: Profile = {
       ...draft,
-      name: draft.name.trim() || initial.name,
+      firstName,
+      lastName,
+      name: typedName || [firstName, lastName].filter(Boolean).join(" ") || initial.name,
+      company: draft.company.trim(),
       title: draft.title.trim(),
       bio: draft.bio.trim(),
       initials: (draft.initials.trim() || initial.initials || "SN")
@@ -161,18 +197,49 @@ export default function Editor({
 
         {/* Profile fields */}
         <section className="mt-5 rounded-2xl border border-line bg-card p-4">
-          <div className="grid grid-cols-[1fr_5.5rem] gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="ed-first" className={labelCls}>
+                First name
+              </label>
+              <input
+                id="ed-first"
+                className={inputCls}
+                value={draft.firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                onFocus={selectOnFocus}
+                placeholder={initial.firstName}
+                autoComplete="given-name"
+              />
+            </div>
+            <div>
+              <label htmlFor="ed-last" className={labelCls}>
+                Last name
+              </label>
+              <input
+                id="ed-last"
+                className={inputCls}
+                value={draft.lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                onFocus={selectOnFocus}
+                placeholder={initial.lastName}
+                autoComplete="family-name"
+              />
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-[1fr_5.5rem] gap-3">
             <div>
               <label htmlFor="ed-name" className={labelCls}>
-                Name
+                Full name
               </label>
               <input
                 id="ed-name"
                 className={inputCls}
                 value={draft.name}
-                onChange={(e) => setField("name", e.target.value)}
+                onChange={(e) => setFullName(e.target.value)}
                 onFocus={selectOnFocus}
                 placeholder={initial.name}
+                autoComplete="name"
               />
             </div>
             <div>
@@ -201,6 +268,21 @@ export default function Editor({
               onChange={(e) => setField("title", e.target.value)}
               onFocus={selectOnFocus}
               placeholder={initial.title}
+              autoComplete="organization-title"
+            />
+          </div>
+          <div className="mt-3">
+            <label htmlFor="ed-company" className={labelCls}>
+              Company
+            </label>
+            <input
+              id="ed-company"
+              className={inputCls}
+              value={draft.company}
+              onChange={(e) => setField("company", e.target.value)}
+              onFocus={selectOnFocus}
+              placeholder={initial.company || "Company"}
+              autoComplete="organization"
             />
           </div>
           <div className="mt-3">

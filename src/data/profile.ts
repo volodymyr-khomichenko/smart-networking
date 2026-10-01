@@ -51,6 +51,12 @@ export interface Contact {
 
 export interface Profile {
   name: string;
+  /** Given name — copied on its own into a conference form. */
+  firstName: string;
+  /** Family name — copied on its own. */
+  lastName: string;
+  /** Organization, copied on its own into a conference form. */
+  company: string;
   title: string;
   bio: string;
   /** Shown in the avatar circle, e.g. "VK" */
@@ -62,7 +68,10 @@ export interface Profile {
 
 export const profile: Profile = {
   name: "Volodymyr Khomichenko",
-  title: "Tech B2B Marketing Strategist & Author",
+  firstName: "Volodymyr",
+  lastName: "Khomichenko",
+  company: "Zoolatech",
+  title: "Senior Marketing Director",
   bio: "12+ years in marketing, 8+ in B2B tech. Author of The Marketing Behind Rapid Growth book, podcast and newsletter.",
   initials: "VK",
   tabs: [
@@ -274,6 +283,46 @@ export const profile: Profile = {
   ],
 };
 
+/** First token is the given name; the rest is the family name. */
+export function splitName(name: string): { firstName: string; lastName: string } {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: "", lastName: "" };
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
+
+export interface FormField {
+  id: string;
+  label: string;
+  value: string;
+}
+
+/**
+ * One row per thing a conference form usually asks for.
+ * Tap a row to copy just that value. Email and phone appear only
+ * when the visitor has added those cards locally — never invented here.
+ */
+export function formFields(p: Profile): FormField[] {
+  const rows: FormField[] = [
+    { id: "first", label: "First name", value: p.firstName.trim() },
+    { id: "last", label: "Last name", value: p.lastName.trim() },
+    { id: "full", label: "Full name", value: p.name.trim() },
+    { id: "title", label: "Title", value: p.title.trim() },
+    { id: "company", label: "Company", value: p.company.trim() },
+    { id: "bio", label: "Short description", value: p.bio.trim() },
+  ];
+  const email = p.contacts.find((c) => c.type === "email" && !c.archived);
+  const phone = p.contacts.find((c) => c.type === "phone" && !c.archived);
+  const site = p.contacts.find((c) => c.id === "website" && !c.archived);
+  const linkedin = p.contacts.find((c) => c.id === "linkedin" && !c.archived);
+  if (email?.value) rows.push({ id: "email", label: "Email", value: email.value });
+  if (phone?.value) rows.push({ id: "phone", label: "Phone", value: phone.value });
+  if (site?.value) rows.push({ id: "website", label: "Website", value: site.value });
+  if (linkedin?.value)
+    rows.push({ id: "linkedin", label: "LinkedIn", value: linkedin.value });
+  return rows;
+}
+
 /**
  * Builds a vCard payload from the profile.
  * When encoded into a QR code, most phone cameras offer
@@ -286,7 +335,9 @@ export function buildVCard(p: Profile): string {
   const lines = [
     "BEGIN:VCARD",
     "VERSION:3.0",
+    `N:${p.lastName};${p.firstName};;;`,
     `FN:${p.name}`,
+    p.company ? `ORG:${p.company}` : "",
     `TITLE:${p.title}`,
     email ? `EMAIL;TYPE=INTERNET:${email}` : "",
     site ? `URL:${site}` : "",
