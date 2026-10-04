@@ -19,10 +19,12 @@ function Corner({ className }: { className: string }) {
   );
 }
 
+
 export default function QRModal({ contact, profile, onClose }: QRModalProps) {
   const value = qrValueFor(contact, profile);
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
+  const branded = value.length <= 320;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -98,13 +100,27 @@ export default function QRModal({ contact, profile, onClose }: QRModalProps) {
           <QRCodeSVG
             value={value}
             size={260}
-            level="M"
+            level={branded ? "H" : "M"}
+            boostLevel={false}
             marginSize={2}
             bgColor="#ffffff"
             fgColor="#14161a"
             className="h-auto w-full max-w-[260px]"
+            imageSettings={
+              branded
+                ? {
+                    src: "/icon-512.png",
+                    height: 52,
+                    width: 52,
+                    excavate: true,
+                  }
+                : undefined
+            }
           />
         </div>
+        <p className="mt-4 font-display text-base font-semibold tracking-tight text-ink">
+          Smart Networking
+        </p>
 
         {showActions && (
           <>

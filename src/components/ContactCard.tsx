@@ -136,15 +136,11 @@ export default function ContactCard({
             </span>
           </span>
 
-          <span
-            aria-hidden="true"
-            className="grid shrink-0 grid-cols-2 gap-[3px] rounded-md border border-line p-[6px] transition-colors group-hover:border-lanyard"
-          >
-            <span className="h-2 w-2 rounded-[2px] bg-ink" />
-            <span className="h-2 w-2 rounded-[2px] bg-lanyard" />
-            <span className="h-2 w-2 rounded-[2px] bg-lanyard" />
-            <span className="h-2 w-2 rounded-[2px] bg-ink" />
-          </span>
+          <img
+            src="/icon-512.png"
+            alt=""
+            className="h-7 w-7 shrink-0 rounded-md"
+          />
         </button>
 
         <button

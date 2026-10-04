@@ -59,8 +59,10 @@ export interface Profile {
   company: string;
   title: string;
   bio: string;
-  /** Shown in the avatar circle, e.g. "VK" */
+  /** Shown in the avatar circle when no photo is set, e.g. "VK" */
   initials: string;
+  /** Portrait uploaded on this device. A data URL, kept only in the local card. */
+  photo?: string;
   /** Editable tab names for the card list */
   tabs: Tab[];
   contacts: Contact[];
@@ -299,9 +301,55 @@ export interface FormField {
 
 /**
  * One row per thing a conference form usually asks for.
- * Tap a row to copy just that value. Email and phone appear only
- * when the visitor has added those cards locally — never invented here.
+ * Tap a row to copy just that value. Every filled email, phone, and
+ * messenger already on the card is listed — nothing is invented here.
  */
+const MESSENGERS: { name: string; test: RegExp }[] = [
+  { name: "Telegram", test: /telegram|t\.me\/|telegram\.me/ },
+  { name: "Viber", test: /viber/ },
+  { name: "WhatsApp", test: /whatsapp|wa\.me/ },
+  { name: "Signal", test: /\bsignal\b|signal\.me/ },
+  { name: "Skype", test: /skype/ },
+  { name: "Discord", test: /discord/ },
+  { name: "Messenger", test: /\bmessenger\b|m\.me\// },
+  { name: "WeChat", test: /wechat|weixin/ },
+  { name: "LINE", test: /\bline\b|line\.me/ },
+];
+
+function contactBlob(c: Contact): string {
+  return `${c.id} ${c.icon ?? ""} ${c.label} ${c.value}`.toLowerCase();
+}
+
+function messengerName(c: Contact): string | null {
+  const blob = contactBlob(c);
+  return MESSENGERS.find((m) => m.test.test(blob))?.name ?? null;
+}
+
+function isFilled(c: Contact): boolean {
+  return !c.archived && c.type !== "vcard" && c.value.trim().length > 0;
+}
+
+/** "Email — Work" when the card name adds something; otherwise just "Email". */
+function fieldLabel(kind: string, cardLabel: string): string {
+  const card = cardLabel.trim();
+  if (!card || card.toLowerCase() === kind.toLowerCase()) return kind;
+  if (card.toLowerCase().includes(kind.toLowerCase())) return card;
+  return `${kind} — ${card}`;
+}
+
+function numberDuplicates(rows: FormField[]): FormField[] {
+  const totals = new Map<string, number>();
+  for (const row of rows) totals.set(row.label, (totals.get(row.label) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  return rows.map((row) => {
+    const total = totals.get(row.label) ?? 1;
+    if (total < 2) return row;
+    const n = (seen.get(row.label) ?? 0) + 1;
+    seen.set(row.label, n);
+    return { ...row, label: `${row.label} ${n}` };
+  });
+}
+
 export function formFields(p: Profile): FormField[] {
   const rows: FormField[] = [
     { id: "first", label: "First name", value: p.firstName.trim() },
@@ -311,38 +359,68 @@ export function formFields(p: Profile): FormField[] {
     { id: "company", label: "Company", value: p.company.trim() },
     { id: "bio", label: "Short description", value: p.bio.trim() },
   ];
-  const email = p.contacts.find((c) => c.type === "email" && !c.archived);
-  const phone = p.contacts.find((c) => c.type === "phone" && !c.archived);
-  const site = p.contacts.find((c) => c.id === "website" && !c.archived);
-  const linkedin = p.contacts.find((c) => c.id === "linkedin" && !c.archived);
-  if (email?.value) rows.push({ id: "email", label: "Email", value: email.value });
-  if (phone?.value) rows.push({ id: "phone", label: "Phone", value: phone.value });
-  if (site?.value) rows.push({ id: "website", label: "Website", value: site.value });
-  if (linkedin?.value)
-    rows.push({ id: "linkedin", label: "LinkedIn", value: linkedin.value });
+
+  const filled = p.contacts.filter(isFilled);
+  const emails = filled.filter((c) => c.type === "email");
+  const messengers = filled.filter((c) => c.type !== "email" && messengerName(c));
+  const messengerIds = new Set(messengers.map((c) => c.id));
+  const phones = filled.filter((c) => c.type === "phone" && !messengerIds.has(c.id));
+
+  const contactRows: FormField[] = [
+    ...emails.map((c) => ({
+      id: c.id,
+      label: fieldLabel("Email", c.label),
+      value: c.value.trim(),
+    })),
+    ...phones.map((c) => ({
+      id: c.id,
+      label: fieldLabel("Phone", c.label),
+      value: c.value.trim(),
+    })),
+    ...messengers.map((c) => ({
+      id: c.id,
+      label: fieldLabel(messengerName(c) ?? "Messenger", c.label),
+      value: c.value.trim(),
+    })),
+  ];
+  rows.push(...numberDuplicates(contactRows));
+
+  const site = p.contacts.find((c) => c.id === "website" && isFilled(c));
+  const linkedin = p.contacts.find((c) => c.id === "linkedin" && isFilled(c));
+  if (site) rows.push({ id: "website", label: "Website", value: site.value.trim() });
+  if (linkedin) rows.push({ id: "linkedin", label: "LinkedIn", value: linkedin.value.trim() });
   return rows;
 }
 
+function esc(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\r?\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
 /**
- * Builds a vCard payload from the profile.
- * When encoded into a QR code, most phone cameras offer
- * "Add to contacts" directly after scanning.
+ * Builds a short vCard 3.0 on the device.
+ * Phone cameras offer "Add to contacts" after scanning, with no network.
+ * Email and phone are included only when those cards already exist and are not archived.
  */
 export function buildVCard(p: Profile): string {
-  const email = p.contacts.find((c) => c.type === "email")?.value ?? "";
-  const site = p.contacts.find((c) => c.id === "website")?.value ?? "";
-  const linkedin = p.contacts.find((c) => c.id === "linkedin")?.value ?? "";
+  const email = p.contacts.find((c) => c.type === "email" && !c.archived)?.value ?? "";
+  const phone = p.contacts.find((c) => c.type === "phone" && !c.archived)?.value ?? "";
+  const site = p.contacts.find((c) => c.id === "website" && !c.archived)?.value ?? "";
+  const note = p.bio.trim().slice(0, 100);
   const lines = [
     "BEGIN:VCARD",
     "VERSION:3.0",
-    `N:${p.lastName};${p.firstName};;;`,
-    `FN:${p.name}`,
-    p.company ? `ORG:${p.company}` : "",
-    `TITLE:${p.title}`,
-    email ? `EMAIL;TYPE=INTERNET:${email}` : "",
-    site ? `URL:${site}` : "",
-    linkedin ? `URL:${linkedin}` : "",
-    `NOTE:${p.bio}`,
+    `N:${esc(p.lastName)};${esc(p.firstName)};;;`,
+    `FN:${esc(p.name)}`,
+    p.company.trim() ? `ORG:${esc(p.company.trim())}` : "",
+    p.title.trim() ? `TITLE:${esc(p.title.trim())}` : "",
+    email.trim() ? `EMAIL;TYPE=INTERNET:${email.trim()}` : "",
+    phone.trim() ? `TEL;TYPE=CELL:${phone.replace(/[^\d+]/g, "")}` : "",
+    site.trim() ? `URL:${site.trim()}` : "",
+    note ? `NOTE:${esc(note)}` : "",
     "END:VCARD",
   ];
   return lines.filter(Boolean).join("\r\n");

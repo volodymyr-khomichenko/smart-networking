@@ -8,25 +8,30 @@ import { DEFAULT_TABS, Profile, splitName } from "@/data/profile";
 
 const KEY = "smart-networking-profile-v1";
 
+function normalize(profile: Profile): Profile {
+  if (!Array.isArray(profile.tabs) || profile.tabs.length === 0) {
+    profile.tabs = JSON.parse(JSON.stringify(DEFAULT_TABS));
+  }
+  if (typeof profile.firstName !== "string" || typeof profile.lastName !== "string") {
+    const split = splitName(profile.name || "");
+    if (typeof profile.firstName !== "string") profile.firstName = split.firstName;
+    if (typeof profile.lastName !== "string") profile.lastName = split.lastName;
+  }
+  if (typeof profile.company !== "string") profile.company = "";
+  if (typeof profile.photo !== "string" || !profile.photo.startsWith("data:image/")) {
+    delete profile.photo;
+  }
+  if (!Array.isArray(profile.contacts)) profile.contacts = [];
+  return profile;
+}
+
 export function loadStoredProfile(): Profile | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (!data || typeof data !== "object" || !data.profile) return null;
-    const profile = data.profile as Profile;
-    // Older saved profiles may predate editable tabs
-    if (!Array.isArray(profile.tabs) || profile.tabs.length === 0) {
-      profile.tabs = JSON.parse(JSON.stringify(DEFAULT_TABS));
-    }
-    // Older saved profiles predate the form-copy fields. Same storage key.
-    if (typeof profile.firstName !== "string" || typeof profile.lastName !== "string") {
-      const split = splitName(profile.name || "");
-      if (typeof profile.firstName !== "string") profile.firstName = split.firstName;
-      if (typeof profile.lastName !== "string") profile.lastName = split.lastName;
-    }
-    if (typeof profile.company !== "string") profile.company = "";
-    return profile;
+    return normalize(data.profile as Profile);
   } catch {
     return null;
   }
@@ -45,5 +50,22 @@ export function clearStoredProfile(): void {
     localStorage.removeItem(KEY);
   } catch {
     /* ignore */
+  }
+}
+
+export function profileToFile(profile: Profile): string {
+  return JSON.stringify({ version: 1, profile }, null, 2);
+}
+
+/** Accepts the export file, or a bare profile object. Returns null if the shape is wrong. */
+export function parseImportedProfile(raw: string): Profile | null {
+  try {
+    const data = JSON.parse(raw);
+    const profile = (data && data.profile) || data;
+    if (!profile || typeof profile !== "object") return null;
+    if (typeof profile.name !== "string" || !Array.isArray(profile.contacts)) return null;
+    return normalize(profile as Profile);
+  } catch {
+    return null;
   }
 }

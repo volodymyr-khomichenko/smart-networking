@@ -10,8 +10,11 @@ import {
 import {
   clearStoredProfile,
   loadStoredProfile,
+  parseImportedProfile,
+  profileToFile,
   storeProfile,
 } from "@/lib/storage";
+import { saveContactCard } from "@/lib/card";
 import ProfileCard from "@/components/ProfileCard";
 import PinnedBar from "@/components/PinnedBar";
 import ModeSwitcher from "@/components/ModeSwitcher";
@@ -29,11 +32,13 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile>(demoProfile);
   const [isCustom, setIsCustom] = useState(false);
   const [mode, setMode] = useState<Mode["id"]>("all");
+  const [query, setQuery] = useState("");
   const [active, setActive] = useState<Contact | null>(null);
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
   const [editingCard, setEditingCard] = useState<Contact | null>(null);
   const [copying, setCopying] = useState(false);
+  const [importError, setImportError] = useState("");
 
   // Load a locally saved profile (if the visitor made the card theirs)
   useEffect(() => {
@@ -52,14 +57,18 @@ export default function Home() {
     [profile.tabs]
   );
 
-  const visibleContacts = useMemo(
-    () =>
-      (mode === "all"
+  const visibleContacts = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (
+      mode === "all"
         ? profile.contacts
         : profile.contacts.filter((c) => c.modes.includes(mode))
-      ).filter((c) => !c.archived),
-    [profile.contacts, mode]
-  );
+    )
+      .filter((c) => !c.archived)
+      .filter(
+        (c) => !q || `${c.label} ${c.hint} ${c.value}`.toLowerCase().includes(q)
+      );
+  }, [profile.contacts, mode, query]);
 
   const archivedContacts = useMemo(
     () => profile.contacts.filter((c) => c.archived),
@@ -129,6 +138,27 @@ export default function Home() {
     setIsCustom(false);
     setEditing(false);
     setMode("all");
+    setQuery("");
+  };
+
+  const handleExport = () => {
+    const blob = new Blob([profileToFile(profile)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "smart-networking-card.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (file: File) => {
+    const next = parseImportedProfile(await file.text());
+    if (!next) {
+      setImportError("That file is not a Smart Networking card.");
+      return;
+    }
+    setImportError("");
+    persist(next);
   };
 
   return (
@@ -138,11 +168,27 @@ export default function Home() {
         onEdit={() => setEditing(true)}
         onAdd={() => setAdding(true)}
         onCopy={() => setCopying(true)}
+        onSaveContact={() => setActive(saveContactCard())}
+        onPhoto={(photo) => persist({ ...profile, photo })}
+        onExport={handleExport}
+        onImport={handleImport}
+        importError={importError}
       />
 
       <PinnedBar contacts={pinned} onSelect={setActive} />
 
       <ModeSwitcher modes={tabList} active={mode} onChange={setMode} />
+
+      <label className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-card px-3 py-2.5">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Find a link"
+          aria-label="Find a link"
+          className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-soft"
+        />
+      </label>
 
       <h2 className="mt-6 mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-ink-soft">
         Tap a card to show its QR code
@@ -159,6 +205,11 @@ export default function Home() {
             onEdit={setEditingCard}
           />
         ))}
+        {query.trim() && visibleContacts.length === 0 && (
+          <p className="rounded-xl border border-line bg-card px-4 py-6 text-center text-sm text-ink-soft">
+            No links match.
+          </p>
+        )}
       </div>
 
       <ArchivedSection
