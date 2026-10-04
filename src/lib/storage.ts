@@ -34,6 +34,14 @@ function normalize(profile: Profile): Profile {
   if (typeof profile.photo !== "string" || !profile.photo.startsWith("data:image/")) {
     delete profile.photo;
   }
+  const share = profile.share;
+  if (
+    !share ||
+    !Array.isArray(share.fields) ||
+    !Array.isArray(share.contactIds)
+  ) {
+    delete profile.share;
+  }
   if (!Array.isArray(profile.contacts)) profile.contacts = [];
   return profile;
 }

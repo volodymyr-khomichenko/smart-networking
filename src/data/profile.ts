@@ -55,7 +55,7 @@ export interface Profile {
   firstName: string;
   /** Family name — copied on its own. */
   lastName: string;
-  /** Organization, copied on its own into a conference form. */
+  /** Organization. Empty in the public demo; filled locally if you have one. */
   company: string;
   title: string;
   bio: string;
@@ -63,6 +63,11 @@ export interface Profile {
   initials: string;
   /** Portrait uploaded on this device. A data URL, kept only in the local card. */
   photo?: string;
+  /**
+   * What this profile puts in the share QR.
+   * Absent means the usual default: name, title, company, note, plus the first email, phone and website.
+   */
+  share?: ShareSelection;
   /** Editable tab names for the card list */
   tabs: Tab[];
   contacts: Contact[];
@@ -392,6 +397,37 @@ export function formFields(p: Profile): FormField[] {
   return rows;
 }
 
+export type ShareField = "name" | "title" | "company" | "note";
+
+export interface ShareSelection {
+  fields: ShareField[];
+  contactIds: string[];
+}
+
+const SHARE_FIELDS: ShareField[] = ["name", "title", "company", "note"];
+
+/** The selection used when a profile has never chosen. */
+export function defaultShare(p: Profile): ShareSelection {
+  const email = p.contacts.find((c) => c.type === "email" && !c.archived && c.value.trim());
+  const phone = p.contacts.find((c) => c.type === "phone" && !c.archived && c.value.trim());
+  const site = p.contacts.find((c) => c.id === "website" && !c.archived && c.value.trim());
+  return {
+    fields: ["name", "title", "company", "note"],
+    contactIds: [email, phone, site].flatMap((c) => (c ? [c.id] : [])),
+  };
+}
+
+export function shareSelection(p: Profile): ShareSelection {
+  const saved = p.share;
+  if (!saved || !Array.isArray(saved.fields) || !Array.isArray(saved.contactIds)) {
+    return defaultShare(p);
+  }
+  return {
+    fields: saved.fields.filter((field): field is ShareField => SHARE_FIELDS.includes(field)),
+    contactIds: saved.contactIds.filter((id) => typeof id === "string"),
+  };
+}
+
 function esc(value: string): string {
   return value
     .replace(/\\/g, "\\\\")
@@ -406,24 +442,30 @@ function esc(value: string): string {
  * Email and phone are included only when those cards already exist and are not archived.
  */
 export function buildVCard(p: Profile): string {
-  const email = p.contacts.find((c) => c.type === "email" && !c.archived)?.value ?? "";
-  const phone = p.contacts.find((c) => c.type === "phone" && !c.archived)?.value ?? "";
-  const site = p.contacts.find((c) => c.id === "website" && !c.archived)?.value ?? "";
+  const selected = shareSelection(p);
+  const chosen = new Set(selected.contactIds);
+  const lines = ["BEGIN:VCARD", "VERSION:3.0"];
+  if (selected.fields.includes("name")) {
+    lines.push(`N:${esc(p.lastName)};${esc(p.firstName)};;;`);
+    lines.push(`FN:${esc(p.name)}`);
+  }
+  if (selected.fields.includes("company") && p.company.trim()) {
+    lines.push(`ORG:${esc(p.company.trim())}`);
+  }
+  if (selected.fields.includes("title") && p.title.trim()) {
+    lines.push(`TITLE:${esc(p.title.trim())}`);
+  }
+  for (const contact of p.contacts) {
+    if (!chosen.has(contact.id) || contact.archived || !contact.value.trim()) continue;
+    if (contact.type === "email") lines.push(`EMAIL;TYPE=INTERNET:${contact.value.trim()}`);
+    else if (contact.type === "phone") {
+      lines.push(`TEL;TYPE=CELL:${contact.value.replace(/[^\d+]/g, "")}`);
+    } else if (contact.type === "url") lines.push(`URL:${contact.value.trim()}`);
+  }
   const note = p.bio.trim().slice(0, 100);
-  const lines = [
-    "BEGIN:VCARD",
-    "VERSION:3.0",
-    `N:${esc(p.lastName)};${esc(p.firstName)};;;`,
-    `FN:${esc(p.name)}`,
-    p.company.trim() ? `ORG:${esc(p.company.trim())}` : "",
-    p.title.trim() ? `TITLE:${esc(p.title.trim())}` : "",
-    email.trim() ? `EMAIL;TYPE=INTERNET:${email.trim()}` : "",
-    phone.trim() ? `TEL;TYPE=CELL:${phone.replace(/[^\d+]/g, "")}` : "",
-    site.trim() ? `URL:${site.trim()}` : "",
-    note ? `NOTE:${esc(note)}` : "",
-    "END:VCARD",
-  ];
-  return lines.filter(Boolean).join("\r\n");
+  if (selected.fields.includes("note") && note) lines.push(`NOTE:${esc(note)}`);
+  lines.push("END:VCARD");
+  return lines.join("\r\n");
 }
 
 /** Resolves the string that goes inside the QR code for a given contact. */

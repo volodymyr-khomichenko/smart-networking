@@ -467,6 +467,7 @@ export default function Home() {
           contact={active}
           profile={profile}
           onClose={() => setActive(null)}
+          onUpdate={persist}
         />
       )}
     </main>
