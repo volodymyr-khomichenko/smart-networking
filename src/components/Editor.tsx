@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+
+import { useMemo, useRef, useState } from "react";
 import {
   Contact,
   ContactType,
@@ -17,6 +18,9 @@ interface EditorProps {
   onSave: (profile: Profile) => void;
   onReset: () => void;
   onClose: () => void;
+  onExport?: () => void;
+  onImport?: (file: File) => void;
+  importError?: string;
 }
 
 function clone(p: Profile): Profile {
@@ -42,6 +46,9 @@ export default function Editor({
   onSave,
   onReset,
   onClose,
+  onExport,
+  onImport,
+  importError,
 }: EditorProps) {
   const [draft, setDraft] = useState<Profile>(() => {
     const base = clone(initial);
@@ -62,6 +69,7 @@ export default function Editor({
     () => draft.contacts.filter((c) => c.favorite).length,
     [draft.contacts]
   );
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const setField = (
     field: "name" | "title" | "bio" | "initials" | "company",
@@ -454,6 +462,46 @@ export default function Editor({
             Reset to the demo profile
           </button>
         )}
+
+        <section className="mt-8">
+          <h3 className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-ink-soft">
+            Settings
+          </h3>
+          <div className="mt-3 flex items-center gap-4 text-sm font-semibold text-ink-soft">
+            {onExport && (
+              <button
+                type="button"
+                onClick={onExport}
+                className="underline decoration-line underline-offset-2 hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+              >
+                Export card
+              </button>
+            )}
+            {onImport && (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="underline decoration-line underline-offset-2 hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+              >
+                Import card
+              </button>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && onImport) onImport(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
+          {importError ? (
+            <p className="mt-2 text-xs text-red-500">{importError}</p>
+          ) : null}
+        </section>
       </div>
 
       {/* Sticky action bar */}

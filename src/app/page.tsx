@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Contact,
   Mode,
@@ -9,10 +9,11 @@ import {
 } from "@/data/profile";
 import {
   clearStoredProfile,
-  loadStoredProfile,
+  loadProfileBook,
   parseImportedProfile,
+  ProfileBook,
   profileToFile,
-  storeProfile,
+  storeProfileBook,
 } from "@/lib/storage";
 import { saveContactCard } from "@/lib/card";
 import ProfileCard from "@/components/ProfileCard";
@@ -28,8 +29,22 @@ import CopySheet from "@/components/CopySheet";
 
 const MAX_FAVORITES = 5;
 
+function demoBook(): ProfileBook {
+  return {
+    activeId: "default",
+    profiles: [
+      {
+        id: "default",
+        label: "Default",
+        isDefault: true,
+        profile: demoProfile,
+      },
+    ],
+  };
+}
+
 export default function Home() {
-  const [profile, setProfile] = useState<Profile>(demoProfile);
+  const [book, setBook] = useState<ProfileBook>(demoBook);
   const [isCustom, setIsCustom] = useState(false);
   const [mode, setMode] = useState<Mode["id"]>("all");
   const [query, setQuery] = useState("");
@@ -39,15 +54,38 @@ export default function Home() {
   const [editingCard, setEditingCard] = useState<Contact | null>(null);
   const [copying, setCopying] = useState(false);
   const [importError, setImportError] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Load a locally saved profile (if the visitor made the card theirs)
   useEffect(() => {
-    const stored = loadStoredProfile();
+    const stored = loadProfileBook();
     if (stored) {
-      setProfile(stored);
+      setBook(stored);
       setIsCustom(true);
     }
   }, []);
+
+  const current =
+    book.profiles.find((slot) => slot.id === book.activeId) ?? book.profiles[0];
+  const profile = current.profile;
+
+  const write = (next: ProfileBook) => {
+    setBook(next);
+    storeProfileBook(next);
+    setIsCustom(true);
+  };
+
+  const closeLayers = () => {
+    setActive(null);
+    setEditing(false);
+    setAdding(false);
+    setEditingCard(null);
+    setCopying(false);
+    setMode("all");
+    setQuery("");
+  };
 
   const tabList: Mode[] = useMemo(
     () => [
@@ -84,10 +122,70 @@ export default function Home() {
   );
 
   const persist = (next: Profile) => {
-    setProfile(next);
-    storeProfile(next);
-    setIsCustom(true);
+    write({
+      ...book,
+      profiles: book.profiles.map((slot) =>
+        slot.id === current.id ? { ...slot, profile: next } : slot
+      ),
+    });
   };
+
+  const switchProfile = (id: string) => {
+    if (id === current.id) return;
+    write({ ...book, activeId: id });
+    closeLayers();
+  };
+
+  const commitDraft = () => {
+    const label = draftName.trim();
+    if (!label) return;
+    const source =
+      book.profiles.find((slot) => slot.isDefault)?.profile ?? profile;
+    const id = `p-${Date.now()}`;
+    write({
+      activeId: id,
+      profiles: [
+        ...book.profiles,
+        {
+          id,
+          label,
+          isDefault: false,
+          profile: JSON.parse(JSON.stringify(source)) as Profile,
+        },
+      ],
+    });
+    setDraftName("");
+    setDrafting(false);
+    setMenuOpen(false);
+    closeLayers();
+  };
+
+  const deleteProfile = (id: string) => {
+    const slot = book.profiles.find((item) => item.id === id);
+    if (!slot || slot.isDefault) return;
+    if (!window.confirm("Delete this profile? The default profile stays.")) return;
+    const profiles = book.profiles.filter((item) => item.id !== id);
+    write({
+      activeId: current.id === id ? "default" : current.id,
+      profiles,
+    });
+    setMenuOpen(false);
+    setDrafting(false);
+    closeLayers();
+  };
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+        setDrafting(false);
+        setDraftName("");
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [menuOpen]);
 
   const patchContact = (id: string, patch: Partial<Contact>) =>
     persist({
@@ -133,9 +231,20 @@ export default function Home() {
   };
 
   const handleReset = () => {
-    clearStoredProfile();
-    setProfile(demoProfile);
-    setIsCustom(false);
+    const demo = JSON.parse(JSON.stringify(demoProfile)) as Profile;
+    const onlyDefault = book.profiles.length === 1 && current.isDefault;
+    if (onlyDefault) {
+      clearStoredProfile();
+      setBook(demoBook());
+      setIsCustom(false);
+    } else {
+      write({
+        ...book,
+        profiles: book.profiles.map((slot) =>
+          slot.id === current.id ? { ...slot, profile: demo } : slot
+        ),
+      });
+    }
     setEditing(false);
     setMode("all");
     setQuery("");
@@ -163,6 +272,92 @@ export default function Home() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-4 pb-24 pt-6">
+      <div ref={menuRef} className="relative mb-4">
+        <button
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded={menuOpen}
+          aria-label="Profile"
+          onClick={() => {
+            setMenuOpen((open) => !open);
+            setDrafting(false);
+            setDraftName("");
+          }}
+          className="flex w-full items-center justify-between rounded-xl border border-line bg-card px-3 py-2.5 text-left font-display text-sm font-semibold text-ink outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+        >
+          <span className="min-w-0 truncate">{current.label}</span>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4 shrink-0 text-ink-soft">
+            <path d="M7 10l5 5 5-5H7z" />
+          </svg>
+        </button>
+        {menuOpen && (
+          <div
+            role="listbox"
+            aria-label="Profiles"
+            className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-line bg-card shadow-[0_10px_30px_rgba(20,22,26,0.08)]"
+          >
+            {book.profiles.map((slot) => (
+              <div key={slot.id} className="flex items-center border-b border-line last:border-b-0">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={slot.id === current.id}
+                  onClick={() => {
+                    switchProfile(slot.id);
+                    setMenuOpen(false);
+                    setDrafting(false);
+                  }}
+                  className={`min-w-0 flex-1 px-3 py-2.5 text-left text-sm font-semibold ${
+                    slot.id === current.id ? "text-lanyard" : "text-ink"
+                  }`}
+                >
+                  {slot.label}
+                </button>
+                {!slot.isDefault && (
+                  <button
+                    type="button"
+                    aria-label={`Delete ${slot.label}`}
+                    onClick={() => deleteProfile(slot.id)}
+                    className="shrink-0 px-3 text-xs font-semibold text-ink-soft underline decoration-line underline-offset-2 hover:text-lanyard"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            ))}
+            {drafting ? (
+              <input
+                autoFocus
+                aria-label="New profile name"
+                value={draftName}
+                placeholder="Profile name"
+                onChange={(e) => setDraftName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    commitDraft();
+                  } else if (e.key === "Escape") {
+                    setDrafting(false);
+                    setDraftName("");
+                  }
+                }}
+                className="w-full border-t border-line bg-card px-3 py-2.5 text-sm text-ink outline-none placeholder:text-ink-soft"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setDrafting(true);
+                  setDraftName("");
+                }}
+                className="w-full border-t border-line px-3 py-2.5 text-left text-sm font-semibold text-lanyard"
+              >
+                Create new profile
+              </button>
+            )}
+          </div>
+        )}
+      </div>
       <ProfileCard
         profile={profile}
         onEdit={() => setEditing(true)}
@@ -170,9 +365,6 @@ export default function Home() {
         onCopy={() => setCopying(true)}
         onSaveContact={() => setActive(saveContactCard())}
         onPhoto={(photo) => persist({ ...profile, photo })}
-        onExport={handleExport}
-        onImport={handleImport}
-        importError={importError}
       />
 
       <PinnedBar contacts={pinned} onSelect={setActive} />
@@ -264,6 +456,9 @@ export default function Home() {
           onSave={handleSave}
           onReset={handleReset}
           onClose={() => setEditing(false)}
+          onExport={handleExport}
+          onImport={handleImport}
+          importError={importError}
         />
       )}
 

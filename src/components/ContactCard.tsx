@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useRef, useState } from "react";
 import { Contact } from "@/data/profile";
 import { BrandIcon } from "@/components/icons";
@@ -30,6 +31,7 @@ export default function ContactCard({
 }: ContactCardProps) {
   const pinned = contact.favorite ?? false;
   const [dx, setDx] = useState(0);
+  const [copied, setCopied] = useState(false);
   const drag = useRef<{ startX: number; startDx: number; active: boolean }>({
     startX: 0,
     startDx: 0,
@@ -68,6 +70,27 @@ export default function ContactCard({
       return;
     }
     onSelect(contact);
+  };
+
+  const copyLink = async () => {
+    const text = contact.value.trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } catch {
+        /* ignore */
+      }
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (
@@ -118,30 +141,45 @@ export default function ContactCard({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <button
-          type="button"
-          onClick={handleCardClick}
-          className="flex min-w-0 flex-1 items-center gap-4 py-4 pl-4 pr-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard active:bg-lanyard-soft rounded-l-xl"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-paper text-ink transition-colors group-hover:bg-lanyard-soft group-hover:text-lanyard">
+        <div className="flex min-w-0 flex-1 items-center gap-4 py-4 pl-4 pr-1">
+          <button
+            type="button"
+            onClick={handleCardClick}
+            aria-label={`Show QR for ${contact.label}`}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-paper text-ink transition-colors group-hover:bg-lanyard-soft group-hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+          >
             <BrandIcon id={contact.icon ?? contact.id} className="h-5 w-5" />
-          </span>
+          </button>
 
           <span className="min-w-0 flex-1">
-            <span className="block font-display text-base font-semibold leading-snug">
+            <button
+              type="button"
+              onClick={handleCardClick}
+              className="block w-full truncate text-left font-display text-base font-semibold leading-snug focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+            >
               {contact.label}
-            </span>
-            <span className="block truncate text-xs text-ink-soft">
-              {contact.hint}
-            </span>
+            </button>
+            {contact.value.trim() && (
+              <button
+                type="button"
+                onClick={copyLink}
+                aria-label={`Copy ${contact.label}`}
+                className="block w-full truncate text-left text-xs text-lanyard underline decoration-line underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+              >
+                {copied ? "Copied" : contact.value}
+              </button>
+            )}
           </span>
 
-          <img
-            src="/icon-512.png"
-            alt=""
-            className="h-7 w-7 shrink-0 rounded-md"
-          />
-        </button>
+          <button
+            type="button"
+            onClick={handleCardClick}
+            aria-label={`Show QR for ${contact.label}`}
+            className="shrink-0 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+          >
+            <img src="/icon-512.png" alt="" className="h-7 w-7 rounded-md" />
+          </button>
+        </div>
 
         <button
           type="button"

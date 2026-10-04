@@ -11,9 +11,6 @@ interface ProfileCardProps {
   onCopy?: () => void;
   onSaveContact?: () => void;
   onPhoto?: (photo: string) => void;
-  onExport?: () => void;
-  onImport?: (file: File) => void;
-  importError?: string;
 }
 
 export default function ProfileCard({
@@ -23,11 +20,7 @@ export default function ProfileCard({
   onCopy,
   onSaveContact,
   onPhoto,
-  onExport,
-  onImport,
-  importError,
 }: ProfileCardProps) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const [photoError, setPhotoError] = useState("");
   return (
@@ -128,68 +121,34 @@ export default function ProfileCard({
         {profile.bio}
       </p>
 
-      {onSaveContact && (
-        <button
-          type="button"
-          onClick={onSaveContact}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-lanyard px-4 py-3 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-          </svg>
-          Share contact
-        </button>
-      )}
-
-      {onCopy && (
-        <button
-          type="button"
-          onClick={onCopy}
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-paper px-4 py-3 font-display text-sm font-semibold text-ink transition-colors hover:border-lanyard hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-4 w-4">
-            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-          </svg>
-          Copy for forms
-        </button>
-      )}
-
-      {(onExport || onImport) && (
-        <div className="mt-3 flex items-center justify-center gap-3 text-xs font-semibold text-ink-soft">
-          {onExport && (
+      {(onSaveContact || onCopy) && (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {onSaveContact && (
             <button
               type="button"
-              onClick={onExport}
-              className="underline decoration-line underline-offset-2 hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+              onClick={onSaveContact}
+              aria-label="Share contact"
+              className="flex items-center justify-center rounded-xl bg-lanyard py-2.5 text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
             >
-              Export card
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-5 w-5">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+              </svg>
             </button>
           )}
-          {onImport && (
+          {onCopy && (
             <button
               type="button"
-              onClick={() => fileRef.current?.click()}
-              className="underline decoration-line underline-offset-2 hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+              onClick={onCopy}
+              aria-label="Copy for forms"
+              className="flex items-center justify-center rounded-xl border border-line bg-paper py-2.5 text-ink transition-colors hover:border-lanyard hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
             >
-              Import card
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-5 w-5">
+                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+              </svg>
             </button>
           )}
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file && onImport) onImport(file);
-              e.target.value = "";
-            }}
-          />
         </div>
       )}
-      {importError ? (
-        <p className="mt-2 text-center text-xs text-red-500">{importError}</p>
-      ) : null}
     </section>
   );
 }
