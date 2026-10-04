@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Profile } from "@/data/profile";
 import { readProfilePhoto } from "@/lib/card";
 
@@ -29,6 +29,7 @@ export default function ProfileCard({
 }: ProfileCardProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const [photoError, setPhotoError] = useState("");
   return (
     <section
       aria-label="Profile"
@@ -95,13 +96,18 @@ export default function ProfileCard({
         <input
           ref={photoRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,.jpg,.jpeg,.png"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
             e.target.value = "";
             if (!file || !onPhoto) return;
-            readProfilePhoto(file).then(onPhoto).catch(() => {});
+            readProfilePhoto(file)
+              .then((photo) => {
+                setPhotoError("");
+                onPhoto(photo);
+              })
+              .catch(() => setPhotoError("Use a JPEG or PNG under 1 MB."));
           }}
         />
         <div className="min-w-0">
@@ -114,6 +120,9 @@ export default function ProfileCard({
           ) : null}
         </div>
       </div>
+      {photoError ? (
+        <p className="mt-2 text-xs text-red-500">{photoError}</p>
+      ) : null}
 
       <p className="mt-4 text-sm leading-relaxed text-ink-soft">
         {profile.bio}
