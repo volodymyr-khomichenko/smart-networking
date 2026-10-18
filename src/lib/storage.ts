@@ -1,12 +1,14 @@
 // ---------------------------------------------------------------------------
-// Local profile storage.
-// A visitor can edit the demo profile and keep their own version — it is
-// saved only in their browser (localStorage), never sent anywhere.
+// Card storage.
+// Without a login the card stays in this browser (localStorage).
+// Sign-in is optional. When the visitor is signed in, the same ProfileBook
+// is synced to their account. The install-dismissed flag is never synced.
 // ---------------------------------------------------------------------------
 
 import { DEFAULT_TABS, Profile, splitName } from "@/data/profile";
 
 const KEY = "smart-networking-profile-v1";
+export const BACKUP_KEY = "smart-networking-profile-backup-before-sync";
 const DEFAULT_ID = "default";
 
 export interface SavedProfile {
@@ -69,35 +71,48 @@ function asSlot(raw: unknown, fallbackDefault: boolean): SavedProfile | null {
   };
 }
 
+export function bookToStored(book: ProfileBook) {
+  return { version: 2 as const, activeId: book.activeId, profiles: book.profiles };
+}
+
+export function parseStoredBook(data: unknown): ProfileBook | null {
+  if (!data || typeof data !== "object") return null;
+  const stored = data as {
+    version?: number;
+    activeId?: string;
+    profiles?: unknown;
+    profile?: Profile;
+  };
+
+  if (stored.version === 2 && Array.isArray(stored.profiles)) {
+    const profiles = stored.profiles
+      .map((slot) => asSlot(slot, false))
+      .filter((slot): slot is SavedProfile => slot !== null);
+    if (profiles.length === 0) return null;
+    const defaults = profiles.filter((slot) => slot.isDefault);
+    const defaultSlot = defaults[0] ?? profiles[0];
+    const previousDefaultId = defaultSlot.id;
+    defaultSlot.isDefault = true;
+    defaultSlot.id = DEFAULT_ID;
+    for (const slot of profiles) {
+      if (slot !== defaultSlot) slot.isDefault = false;
+    }
+    const wanted = stored.activeId === previousDefaultId ? DEFAULT_ID : stored.activeId;
+    const activeId = profiles.some((slot) => slot.id === wanted) ? wanted! : DEFAULT_ID;
+    return { activeId, profiles };
+  }
+
+  if (stored.profile) {
+    return freshBook(normalize(stored.profile));
+  }
+  return null;
+}
+
 export function loadProfileBook(): ProfileBook | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data || typeof data !== "object") return null;
-
-    if (data.version === 2 && Array.isArray(data.profiles)) {
-      const profiles = (data.profiles as unknown[])
-        .map((slot) => asSlot(slot, false))
-        .filter((slot): slot is SavedProfile => slot !== null);
-      if (profiles.length === 0) return null;
-      const defaults = profiles.filter((slot) => slot.isDefault);
-      const defaultSlot = defaults[0] ?? profiles[0];
-      const previousDefaultId = defaultSlot.id;
-      defaultSlot.isDefault = true;
-      defaultSlot.id = DEFAULT_ID;
-      for (const slot of profiles) {
-        if (slot !== defaultSlot) slot.isDefault = false;
-      }
-      const wanted = data.activeId === previousDefaultId ? DEFAULT_ID : data.activeId;
-      const activeId = profiles.some((slot) => slot.id === wanted) ? wanted : DEFAULT_ID;
-      return { activeId, profiles };
-    }
-
-    if (data.profile) {
-      return freshBook(normalize(data.profile as Profile));
-    }
-    return null;
+    return parseStoredBook(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -105,7 +120,7 @@ export function loadProfileBook(): ProfileBook | null {
 
 export function storeProfileBook(book: ProfileBook): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ version: 2, ...book }));
+    localStorage.setItem(KEY, JSON.stringify(bookToStored(book)));
   } catch {
     /* storage may be unavailable (private mode) — editing still works in memory */
   }

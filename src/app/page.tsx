@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import {
   Contact,
   Mode,
@@ -15,6 +16,8 @@ import {
   profileToFile,
   storeProfileBook,
 } from "@/lib/storage";
+import { reconcileCloud, upsertCloudBook } from "@/lib/cloud";
+import { createClient } from "@/lib/supabase/client";
 import { saveContactCard } from "@/lib/card";
 import ProfileCard from "@/components/ProfileCard";
 import PinnedBar from "@/components/PinnedBar";
@@ -26,6 +29,7 @@ import Editor from "@/components/Editor";
 import InstallHint from "@/components/InstallHint";
 import QuickAdd from "@/components/QuickAdd";
 import CopySheet from "@/components/CopySheet";
+import AccountBar from "@/components/AccountBar";
 
 const MAX_FAVORITES = 5;
 
@@ -57,14 +61,92 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [drafting, setDrafting] = useState(false);
   const [draftName, setDraftName] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [authError, setAuthError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const bookRef = useRef(book);
+  bookRef.current = book;
+  const userIdRef = useRef<string | null>(null);
+  const cloudReady = useRef(false);
+  const syncTimer = useRef<number | null>(null);
+  const syncedFor = useRef<string | null>(null);
+
+  const scheduleCloudSave = (next: ProfileBook) => {
+    const userId = userIdRef.current;
+    if (!userId || !cloudReady.current) return;
+    if (syncTimer.current) window.clearTimeout(syncTimer.current);
+    syncTimer.current = window.setTimeout(() => {
+      upsertCloudBook(userId, next).catch(() => {
+        /* keep the local copy if the network is down */
+      });
+    }, 1000);
+  };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth_error") === "1") {
+      setAuthError(true);
+      params.delete("auth_error");
+      const rest = params.toString();
+      window.history.replaceState({}, "", rest ? `/?${rest}` : "/");
+    }
+
     const stored = loadProfileBook();
     if (stored) {
       setBook(stored);
       setIsCustom(true);
     }
+
+    let supabase: ReturnType<typeof createClient> | null = null;
+    try {
+      supabase = createClient();
+    } catch {
+      return;
+    }
+
+    const applyUser = (next: User | null) => {
+      setUser(next);
+      userIdRef.current = next?.id ?? null;
+      if (!next) {
+        cloudReady.current = false;
+        syncedFor.current = null;
+        if (syncTimer.current) window.clearTimeout(syncTimer.current);
+      }
+    };
+
+    const runReconcile = (userId: string) => {
+      if (syncedFor.current === userId) return;
+      syncedFor.current = userId;
+      cloudReady.current = false;
+      if (syncTimer.current) window.clearTimeout(syncTimer.current);
+      const started = bookRef.current;
+      reconcileCloud(userId)
+        .then((next) => {
+          if (userIdRef.current !== userId) return;
+          cloudReady.current = true;
+          if (bookRef.current !== started) {
+            scheduleCloudSave(bookRef.current);
+            return;
+          }
+          if (next) {
+            setBook(next);
+            setIsCustom(true);
+          }
+        })
+        .catch(() => {
+          if (userIdRef.current === userId) cloudReady.current = true;
+        });
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const next = session?.user ?? null;
+      applyUser(next);
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && next) {
+        runReconcile(next.id);
+      }
+    });
+
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   const current =
@@ -75,6 +157,7 @@ export default function Home() {
     setBook(next);
     storeProfileBook(next);
     setIsCustom(true);
+    scheduleCloudSave(next);
   };
 
   const closeLayers = () => {
@@ -235,8 +318,10 @@ export default function Home() {
     const onlyDefault = book.profiles.length === 1 && current.isDefault;
     if (onlyDefault) {
       clearStoredProfile();
-      setBook(demoBook());
+      const resetBook = demoBook();
+      setBook(resetBook);
       setIsCustom(false);
+      scheduleCloudSave(resetBook);
     } else {
       write({
         ...book,
@@ -409,6 +494,8 @@ export default function Home() {
         onRestore={handleRestore}
       />
 
+      <AccountBar user={user} authError={authError} />
+
       <footer className="mt-10 text-center text-xs text-ink-soft">
         Smart Networking — one page, all your links
         <span className="block mt-1">
@@ -422,7 +509,19 @@ export default function Home() {
             Volodymyr Khomichenko
           </a>
         </span>
-        {isCustom && <span className="block mt-1">Showing your local profile</span>}
+        <span className="block mt-1">
+          <a
+            href="/privacy"
+            className="underline decoration-line underline-offset-2 hover:text-lanyard"
+          >
+            Privacy
+          </a>
+        </span>
+        {isCustom && (
+          <span className="block mt-1">
+            {user ? "Synced with your Google account" : "Showing your local profile"}
+          </span>
+        )}
       </footer>
 
       {!editing && !active && !adding && !editingCard && !copying && <InstallHint />}

@@ -1,6 +1,6 @@
 // Smart Networking — offline support.
 // Cache-first for same-origin GET requests with background refresh.
-const CACHE = "smart-networking-v15";
+const CACHE = "smart-networking-v16";
 const PRECACHE = ["/", "/manifest.webmanifest", "/icon-192.png"];
 
 self.addEventListener("install", (event) => {
@@ -22,9 +22,11 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) {
-    return;
-  }
+  if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  if (url.hostname.endsWith(".supabase.co")) return;
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/auth/") || url.pathname.startsWith("/api/")) return;
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)

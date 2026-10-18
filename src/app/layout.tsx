@@ -8,7 +8,7 @@ import RegisterSW from "@/components/RegisterSW";
 const SITE_URL = "https://smart-networking.khomichenko.com";
 const TITLE = "Smart Networking — Volodymyr Khomichenko";
 const DESCRIPTION =
-  "The networking app for fast offline link sharing. Every link you own in one place — each a QR code with one-tap copy. Installs like a native app, works offline, no login.";
+  "The networking app for fast offline link sharing. Every link you own in one place — each a QR code with one-tap copy. Installs like a native app and works offline. Google sign-in is optional and syncs your cards.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

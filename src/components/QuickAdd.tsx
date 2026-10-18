@@ -141,7 +141,7 @@ export default function QuickAdd({
           </span>
         </div>
         <p className="mt-1 text-xs text-ink-soft">
-          Saved only in this browser — nothing is uploaded anywhere.
+          Saved on this device. Sign in with Google to sync across devices.
         </p>
 
         {/* Card type */}

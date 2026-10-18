@@ -198,9 +198,9 @@ export default function Editor({
           </button>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-ink-soft">
-          Your changes are saved only in this browser on this device — nothing
-          is uploaded anywhere. Grey text is just a hint: start typing your own
-          details right over it.
+          Your changes stay on this device. Sign in with Google if you want
+          them synced across devices. Grey text is just a hint: start typing
+          your own details right over it.
         </p>
 
         {/* Profile fields */}
