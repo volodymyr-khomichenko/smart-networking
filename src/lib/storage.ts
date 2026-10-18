@@ -9,6 +9,7 @@ import { DEFAULT_TABS, Profile, splitName } from "@/data/profile";
 
 const KEY = "smart-networking-profile-v1";
 export const BACKUP_KEY = "smart-networking-profile-backup-before-sync";
+const DIRTY_KEY = "smart-networking-profile-dirty";
 const DEFAULT_ID = "default";
 
 export interface SavedProfile {
@@ -123,6 +124,56 @@ export function storeProfileBook(book: ProfileBook): void {
     localStorage.setItem(KEY, JSON.stringify(bookToStored(book)));
   } catch {
     /* storage may be unavailable (private mode) — editing still works in memory */
+  }
+}
+
+export function markDirty(): void {
+  try {
+    localStorage.setItem(DIRTY_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearDirty(): void {
+  try {
+    localStorage.removeItem(DIRTY_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isDirty(): boolean {
+  try {
+    return localStorage.getItem(DIRTY_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function hasBackupBook(): boolean {
+  try {
+    return localStorage.getItem(BACKUP_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+export function loadBackupBook(): ProfileBook | null {
+  try {
+    const raw = localStorage.getItem(BACKUP_KEY);
+    if (!raw) return null;
+    return parseStoredBook(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+export function clearBackupBook(): void {
+  try {
+    localStorage.removeItem(BACKUP_KEY);
+  } catch {
+    /* ignore */
   }
 }
 

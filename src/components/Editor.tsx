@@ -21,6 +21,8 @@ interface EditorProps {
   onExport?: () => void;
   onImport?: (file: File) => void;
   importError?: string;
+  canRestoreBackup?: boolean;
+  onRestoreBackup?: () => void;
 }
 
 function clone(p: Profile): Profile {
@@ -49,6 +51,8 @@ export default function Editor({
   onExport,
   onImport,
   importError,
+  canRestoreBackup,
+  onRestoreBackup,
 }: EditorProps) {
   const [draft, setDraft] = useState<Profile>(() => {
     const base = clone(initial);
@@ -467,7 +471,7 @@ export default function Editor({
           <h3 className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-ink-soft">
             Settings
           </h3>
-          <div className="mt-3 flex items-center gap-4 text-sm font-semibold text-ink-soft">
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-sm font-semibold text-ink-soft">
             {onExport && (
               <button
                 type="button"
@@ -484,6 +488,15 @@ export default function Editor({
                 className="underline decoration-line underline-offset-2 hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
               >
                 Import card
+              </button>
+            )}
+            {canRestoreBackup && onRestoreBackup && (
+              <button
+                type="button"
+                onClick={onRestoreBackup}
+                className="underline decoration-line underline-offset-2 hover:text-lanyard focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lanyard"
+              >
+                Restore pre-sync backup
               </button>
             )}
             <input

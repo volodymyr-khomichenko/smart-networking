@@ -3,14 +3,15 @@
 import { useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { deleteCloudBook } from "@/lib/cloud";
 
 interface AccountBarProps {
   user: User | null;
   authError: boolean;
+  onSignOut: () => Promise<void>;
+  onDeleteCloud: () => Promise<void>;
 }
 
-export default function AccountBar({ user, authError }: AccountBarProps) {
+export default function AccountBar({ user, authError, onSignOut, onDeleteCloud }: AccountBarProps) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
 
@@ -37,8 +38,7 @@ export default function AccountBar({ user, authError }: AccountBarProps) {
     setNotice("");
     setBusy(true);
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
+      await onSignOut();
     } catch {
       setNotice("Couldn't sign out. Please try again.");
     } finally {
@@ -52,8 +52,8 @@ export default function AccountBar({ user, authError }: AccountBarProps) {
     setNotice("");
     setBusy(true);
     try {
-      await deleteCloudBook(user.id);
-      setNotice("Cloud data deleted.");
+      await onDeleteCloud();
+      setNotice("Cloud data deleted and you were signed out.");
     } catch {
       setNotice("Couldn't delete cloud data. Please try again.");
     } finally {
@@ -66,7 +66,7 @@ export default function AccountBar({ user, authError }: AccountBarProps) {
     (user?.user_metadata?.picture as string | undefined);
 
   return (
-    <section className="mt-8 rounded-xl border border-line bg-card px-4 py-4 text-center">
+    <section className="mb-4 rounded-xl border border-line bg-card px-4 py-4 text-center">
       {user ? (
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">

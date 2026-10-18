@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/client";
 import {
   BACKUP_KEY,
   bookToStored,
+  clearDirty,
+  isDirty,
   loadProfileBook,
   parseStoredBook,
   ProfileBook,
@@ -14,11 +16,21 @@ function sameBook(a: ProfileBook, b: ProfileBook) {
   return JSON.stringify(bookToStored(a)) === JSON.stringify(bookToStored(b));
 }
 
+async function upsertRow(userId: string, book: ProfileBook) {
+  const supabase = createClient();
+  const { error } = await supabase.from(TABLE).upsert(
+    { user_id: userId, data: bookToStored(book) },
+    { onConflict: "user_id" }
+  );
+  if (error) throw error;
+}
+
 /**
  * On sign-in: upload a local book when the cloud is empty,
- * otherwise use the cloud book and cache it locally.
- * If both exist and differ, keep the local book under the backup key first.
- * Returns the book that should be shown, or null when there is nothing stored.
+ * or when the local book has edits that never reached the cloud.
+ * Otherwise use the cloud book and cache it locally.
+ * If both exist, differ, and the local copy is clean, keep it under the backup key first.
+ * Throws when the cloud read or the required upload fails.
  */
 export async function reconcileCloud(userId: string): Promise<ProfileBook | null> {
   const supabase = createClient();
@@ -28,22 +40,27 @@ export async function reconcileCloud(userId: string): Promise<ProfileBook | null
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (error) return null;
+  if (error) throw error;
 
   const local = loadProfileBook();
+  const dirty = isDirty();
 
   if (!data) {
     if (local) {
-      await supabase.from(TABLE).upsert(
-        { user_id: userId, data: bookToStored(local) },
-        { onConflict: "user_id" }
-      );
+      await upsertRow(userId, local);
+      clearDirty();
     }
     return local;
   }
 
   const cloud = parseStoredBook(data.data);
   if (!cloud) return local;
+
+  if (local && dirty) {
+    await upsertRow(userId, local);
+    clearDirty();
+    return local;
+  }
 
   if (local && !sameBook(local, cloud)) {
     try {
@@ -54,15 +71,12 @@ export async function reconcileCloud(userId: string): Promise<ProfileBook | null
   }
 
   storeProfileBook(cloud);
+  clearDirty();
   return cloud;
 }
 
 export async function upsertCloudBook(userId: string, book: ProfileBook) {
-  const supabase = createClient();
-  await supabase.from(TABLE).upsert(
-    { user_id: userId, data: bookToStored(book) },
-    { onConflict: "user_id" }
-  );
+  await upsertRow(userId, book);
 }
 
 export async function deleteCloudBook(userId: string) {

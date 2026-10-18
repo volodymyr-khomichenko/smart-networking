@@ -9,14 +9,20 @@ import {
   profile as demoProfile,
 } from "@/data/profile";
 import {
+  clearBackupBook,
+  clearDirty,
   clearStoredProfile,
+  hasBackupBook,
+  isDirty,
+  loadBackupBook,
   loadProfileBook,
+  markDirty,
   parseImportedProfile,
   ProfileBook,
   profileToFile,
   storeProfileBook,
 } from "@/lib/storage";
-import { reconcileCloud, upsertCloudBook } from "@/lib/cloud";
+import { deleteCloudBook, reconcileCloud, upsertCloudBook } from "@/lib/cloud";
 import { createClient } from "@/lib/supabase/client";
 import { saveContactCard } from "@/lib/card";
 import ProfileCard from "@/components/ProfileCard";
@@ -63,24 +69,120 @@ export default function Home() {
   const [draftName, setDraftName] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [authError, setAuthError] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [canRestoreBackup, setCanRestoreBackup] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const bookRef = useRef(book);
   bookRef.current = book;
   const userIdRef = useRef<string | null>(null);
   const cloudReady = useRef(false);
   const syncTimer = useRef<number | null>(null);
+  const pendingBook = useRef<ProfileBook | null>(null);
+  const reconcileInFlight = useRef(false);
   const syncedFor = useRef<string | null>(null);
+  const syncEpoch = useRef(0);
+  const runReconcileRef = useRef<(userId: string) => void>(() => {});
+  const flushRef = useRef<() => Promise<void>>(async () => {});
+  const retryRef = useRef<() => void>(() => {});
+
+  const cancelSyncTimer = () => {
+    if (syncTimer.current) window.clearTimeout(syncTimer.current);
+    syncTimer.current = null;
+  };
+
+  const pushCloud = async (next: ProfileBook) => {
+    const userId = userIdRef.current;
+    const epoch = syncEpoch.current;
+    if (!userId || !cloudReady.current) return;
+    setSyncStatus("syncing");
+    try {
+      await upsertCloudBook(userId, next);
+      if (syncEpoch.current !== epoch || userIdRef.current !== userId) return;
+      if (pendingBook.current === next) pendingBook.current = null;
+      if (!pendingBook.current) clearDirty();
+      setSyncStatus(pendingBook.current ? "syncing" : "synced");
+    } catch {
+      if (syncEpoch.current === epoch) setSyncStatus("error");
+    }
+  };
+
+  const flushCloudSave = async () => {
+    cancelSyncTimer();
+    const next = pendingBook.current ?? (isDirty() ? loadProfileBook() : null);
+    if (!next) return;
+    await pushCloud(next);
+  };
+  flushRef.current = flushCloudSave;
 
   const scheduleCloudSave = (next: ProfileBook) => {
-    const userId = userIdRef.current;
-    if (!userId || !cloudReady.current) return;
-    if (syncTimer.current) window.clearTimeout(syncTimer.current);
+    pendingBook.current = next;
+    markDirty();
+    if (!userIdRef.current) return;
+    if (!cloudReady.current) {
+      setSyncStatus("error");
+      return;
+    }
+    cancelSyncTimer();
+    setSyncStatus("syncing");
     syncTimer.current = window.setTimeout(() => {
-      upsertCloudBook(userId, next).catch(() => {
-        /* keep the local copy if the network is down */
-      });
+      syncTimer.current = null;
+      void pushCloud(next);
     }, 1000);
   };
+
+  const runReconcile = (userId: string) => {
+    if (reconcileInFlight.current) return;
+    if (cloudReady.current && syncedFor.current === userId) return;
+    reconcileInFlight.current = true;
+    cloudReady.current = false;
+    cancelSyncTimer();
+    const started = bookRef.current;
+    setSyncStatus("syncing");
+    reconcileCloud(userId)
+      .then((next) => {
+        if (userIdRef.current !== userId) return;
+        cloudReady.current = true;
+        syncedFor.current = userId;
+        setCanRestoreBackup(hasBackupBook());
+        if (bookRef.current !== started) {
+          storeProfileBook(bookRef.current);
+          markDirty();
+          pendingBook.current = bookRef.current;
+          void pushCloud(bookRef.current);
+          return;
+        }
+        if (next) {
+          setBook(next);
+          setIsCustom(true);
+        }
+        setSyncStatus("synced");
+      })
+      .catch(() => {
+        if (userIdRef.current !== userId) return;
+        cloudReady.current = false;
+        syncedFor.current = null;
+        setSyncStatus("error");
+      })
+      .finally(() => {
+        reconcileInFlight.current = false;
+      });
+  };
+  runReconcileRef.current = runReconcile;
+
+  const retrySync = () => {
+    const userId = userIdRef.current;
+    if (!userId) return;
+    if (!cloudReady.current) {
+      runReconcileRef.current(userId);
+      return;
+    }
+    const next = pendingBook.current ?? (isDirty() ? loadProfileBook() : null);
+    if (next) {
+      pendingBook.current = next;
+      void pushCloud(next);
+    }
+  };
+  retryRef.current = retrySync;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -96,6 +198,7 @@ export default function Home() {
       setBook(stored);
       setIsCustom(true);
     }
+    setCanRestoreBackup(hasBackupBook());
 
     let supabase: ReturnType<typeof createClient> | null = null;
     try {
@@ -110,43 +213,38 @@ export default function Home() {
       if (!next) {
         cloudReady.current = false;
         syncedFor.current = null;
-        if (syncTimer.current) window.clearTimeout(syncTimer.current);
+        cancelSyncTimer();
+        setSyncStatus("idle");
       }
-    };
-
-    const runReconcile = (userId: string) => {
-      if (syncedFor.current === userId) return;
-      syncedFor.current = userId;
-      cloudReady.current = false;
-      if (syncTimer.current) window.clearTimeout(syncTimer.current);
-      const started = bookRef.current;
-      reconcileCloud(userId)
-        .then((next) => {
-          if (userIdRef.current !== userId) return;
-          cloudReady.current = true;
-          if (bookRef.current !== started) {
-            scheduleCloudSave(bookRef.current);
-            return;
-          }
-          if (next) {
-            setBook(next);
-            setIsCustom(true);
-          }
-        })
-        .catch(() => {
-          if (userIdRef.current === userId) cloudReady.current = true;
-        });
     };
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       const next = session?.user ?? null;
       applyUser(next);
       if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && next) {
-        runReconcile(next.id);
+        runReconcileRef.current(next.id);
       }
     });
 
-    return () => sub.subscription.unsubscribe();
+    const onPageHide = () => {
+      void flushRef.current();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") void flushRef.current();
+    };
+    const onRetry = () => retryRef.current();
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onRetry);
+    window.addEventListener("focus", onRetry);
+
+    return () => {
+      sub.subscription.unsubscribe();
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onRetry);
+      window.removeEventListener("focus", onRetry);
+    };
   }, []);
 
   const current =
@@ -317,11 +415,23 @@ export default function Home() {
     const demo = JSON.parse(JSON.stringify(demoProfile)) as Profile;
     const onlyDefault = book.profiles.length === 1 && current.isDefault;
     if (onlyDefault) {
-      clearStoredProfile();
-      const resetBook = demoBook();
-      setBook(resetBook);
-      setIsCustom(false);
-      scheduleCloudSave(resetBook);
+      if (userIdRef.current) {
+        const ok = window.confirm(
+          "Reset to the demo profile? This also resets the synced copy on all your devices."
+        );
+        if (!ok) return;
+        const resetBook = demoBook();
+        setBook(resetBook);
+        storeProfileBook(resetBook);
+        setIsCustom(false);
+        scheduleCloudSave(resetBook);
+        void flushRef.current();
+      } else {
+        clearStoredProfile();
+        clearDirty();
+        setBook(demoBook());
+        setIsCustom(false);
+      }
     } else {
       write({
         ...book,
@@ -333,6 +443,38 @@ export default function Home() {
     setEditing(false);
     setMode("all");
     setQuery("");
+  };
+
+  const handleSignOut = async () => {
+    await flushRef.current();
+    cancelSyncTimer();
+    cloudReady.current = false;
+    syncedFor.current = null;
+    const supabase = createClient();
+    await supabase.auth.signOut();
+  };
+
+  const handleDeleteCloud = async () => {
+    const userId = userIdRef.current;
+    if (!userId) return;
+    syncEpoch.current += 1;
+    cancelSyncTimer();
+    pendingBook.current = null;
+    cloudReady.current = false;
+    syncedFor.current = null;
+    await deleteCloudBook(userId);
+    setSyncStatus("idle");
+    const supabase = createClient();
+    await supabase.auth.signOut();
+  };
+
+  const handleRestoreBackup = () => {
+    const backup = loadBackupBook();
+    if (!backup) return;
+    clearBackupBook();
+    setCanRestoreBackup(false);
+    write(backup);
+    setEditing(false);
   };
 
   const handleExport = () => {
@@ -357,6 +499,12 @@ export default function Home() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-4 pb-24 pt-6">
+      <AccountBar
+        user={user}
+        authError={authError}
+        onSignOut={handleSignOut}
+        onDeleteCloud={handleDeleteCloud}
+      />
       <div ref={menuRef} className="relative mb-4">
         <button
           type="button"
@@ -494,8 +642,6 @@ export default function Home() {
         onRestore={handleRestore}
       />
 
-      <AccountBar user={user} authError={authError} />
-
       <footer className="mt-10 text-center text-xs text-ink-soft">
         Smart Networking — one page, all your links
         <span className="block mt-1">
@@ -517,11 +663,13 @@ export default function Home() {
             Privacy
           </a>
         </span>
-        {isCustom && (
+        {user && syncStatus === "error" ? (
+          <span className="block mt-1">Not synced, will retry</span>
+        ) : isCustom ? (
           <span className="block mt-1">
             {user ? "Synced with your Google account" : "Showing your local profile"}
           </span>
-        )}
+        ) : null}
       </footer>
 
       {!editing && !active && !adding && !editingCard && !copying && <InstallHint />}
@@ -558,6 +706,8 @@ export default function Home() {
           onExport={handleExport}
           onImport={handleImport}
           importError={importError}
+          canRestoreBackup={canRestoreBackup}
+          onRestoreBackup={handleRestoreBackup}
         />
       )}
 
