@@ -657,7 +657,9 @@ export default function Home() {
         </span>
         <span className="block mt-1">
           <a
-            href="/privacy"
+            href="https://khomichenko.com/privacy-policy/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="underline decoration-line underline-offset-2 hover:text-lanyard"
           >
             Privacy

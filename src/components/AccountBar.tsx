@@ -107,7 +107,12 @@ export default function AccountBar({ user, authError, onSignOut, onDeleteCloud }
           <p className="mt-3 text-xs leading-relaxed text-ink-soft">
             Optional. Sign in with Google to sync your cards across devices. We
             store your Google name, email and your card data.{" "}
-            <a href="/privacy" className="underline decoration-line underline-offset-2 hover:text-lanyard">
+            <a
+              href="https://khomichenko.com/privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-line underline-offset-2 hover:text-lanyard"
+            >
               Privacy
             </a>
           </p>
