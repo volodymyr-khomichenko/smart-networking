@@ -11,6 +11,8 @@ import {
   Tab,
 } from "@/data/profile";
 import { BRAND_ICON_PATHS, BrandIcon } from "@/components/icons";
+import AccountBar from "@/components/AccountBar";
+import type { User } from "@supabase/supabase-js";
 
 interface EditorProps {
   initial: Profile;
@@ -23,6 +25,10 @@ interface EditorProps {
   importError?: string;
   canRestoreBackup?: boolean;
   onRestoreBackup?: () => void;
+  user: User | null;
+  authError: boolean;
+  onSignOut: () => Promise<void>;
+  onDeleteCloud: () => Promise<void>;
 }
 
 function clone(p: Profile): Profile {
@@ -53,6 +59,10 @@ export default function Editor({
   importError,
   canRestoreBackup,
   onRestoreBackup,
+  user,
+  authError,
+  onSignOut,
+  onDeleteCloud,
 }: EditorProps) {
   const [draft, setDraft] = useState<Profile>(() => {
     const base = clone(initial);
@@ -514,6 +524,12 @@ export default function Editor({
           {importError ? (
             <p className="mt-2 text-xs text-red-500">{importError}</p>
           ) : null}
+          <AccountBar
+            user={user}
+            authError={authError}
+            onSignOut={onSignOut}
+            onDeleteCloud={onDeleteCloud}
+          />
         </section>
       </div>
 

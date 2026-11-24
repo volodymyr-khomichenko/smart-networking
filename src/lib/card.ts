@@ -1,4 +1,4 @@
-import { Contact } from "@/data/profile";
+import { buildVCard, Contact, Profile, shareSelection } from "@/data/profile";
 
 export function saveContactCard(): Contact {
   return {
@@ -62,4 +62,54 @@ export async function readProfilePhoto(file: File): Promise<string> {
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+const MAX_SHARE_CARD = 1200;
+
+function loadDataImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("image"));
+    el.src = src;
+  });
+}
+
+function jpegBase64(img: HTMLImageElement, size: number, quality: number): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+  const scale = Math.max(size / img.width, size / img.height);
+  const w = img.width * scale;
+  const h = img.height * scale;
+  ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+  const url = canvas.toDataURL("image/jpeg", quality);
+  const comma = url.indexOf(",");
+  return comma >= 0 ? url.slice(comma + 1) : "";
+}
+
+/** vCard for the share QR. Adds a small photo only while the code stays scannable. */
+export async function shareCardValue(profile: Profile): Promise<string> {
+  const plain = buildVCard(profile);
+  const wantsPhoto =
+    !!profile.photo && shareSelection(profile).fields.includes("photo");
+  if (!wantsPhoto || !profile.photo) return plain;
+  if (MAX_SHARE_CARD - plain.length < 120) return plain;
+  let img: HTMLImageElement;
+  try {
+    img = await loadDataImage(profile.photo);
+  } catch {
+    return plain;
+  }
+  for (const size of [64, 48, 40, 32]) {
+    for (const quality of [0.55, 0.4, 0.3]) {
+      const photo = jpegBase64(img, size, quality);
+      if (!photo) continue;
+      const card = buildVCard(profile, photo);
+      if (card.length <= MAX_SHARE_CARD) return card;
+    }
+  }
+  return plain;
 }

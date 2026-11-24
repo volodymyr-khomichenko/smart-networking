@@ -2,11 +2,14 @@ import { createClient } from "@/lib/supabase/client";
 import {
   BACKUP_KEY,
   bookToStored,
+  clearCloudSeen,
   clearDirty,
+  cloudSeenAt,
   isDirty,
   loadProfileBook,
   parseStoredBook,
   ProfileBook,
+  rememberCloudSeen,
   storeProfileBook,
 } from "@/lib/storage";
 
@@ -16,13 +19,20 @@ function sameBook(a: ProfileBook, b: ProfileBook) {
   return JSON.stringify(bookToStored(a)) === JSON.stringify(bookToStored(b));
 }
 
-async function upsertRow(userId: string, book: ProfileBook) {
+async function upsertRow(userId: string, book: ProfileBook): Promise<string | null> {
   const supabase = createClient();
-  const { error } = await supabase.from(TABLE).upsert(
-    { user_id: userId, data: bookToStored(book) },
-    { onConflict: "user_id" }
-  );
+  const { data, error } = await supabase
+    .from(TABLE)
+    .upsert(
+      { user_id: userId, data: bookToStored(book) },
+      { onConflict: "user_id" }
+    )
+    .select("updated_at")
+    .single();
   if (error) throw error;
+  const seen = typeof data?.updated_at === "string" ? data.updated_at : null;
+  rememberCloudSeen(seen);
+  return seen;
 }
 
 /**
@@ -36,7 +46,7 @@ export async function reconcileCloud(userId: string): Promise<ProfileBook | null
   const supabase = createClient();
   const { data, error } = await supabase
     .from(TABLE)
-    .select("data")
+    .select("data, updated_at")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -72,6 +82,7 @@ export async function reconcileCloud(userId: string): Promise<ProfileBook | null
 
   storeProfileBook(cloud);
   clearDirty();
+  if (typeof data.updated_at === "string") rememberCloudSeen(data.updated_at);
   return cloud;
 }
 
@@ -83,4 +94,43 @@ export async function deleteCloudBook(userId: string) {
   const supabase = createClient();
   const { error } = await supabase.from(TABLE).delete().eq("user_id", userId);
   if (error) throw error;
+  clearCloudSeen();
+}
+
+/**
+ * When this device has no unsent edits, take a newer cloud copy.
+ * Returns the book that replaced the local one, or null when nothing changed.
+ */
+export async function pullNewerCloud(userId: string): Promise<ProfileBook | null> {
+  if (isDirty()) return null;
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("data, updated_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || typeof data.updated_at !== "string") return null;
+  if (data.updated_at === cloudSeenAt()) return null;
+  if (isDirty()) return null;
+
+  const cloud = parseStoredBook(data.data);
+  if (!cloud) return null;
+  const local = loadProfileBook();
+  if (local && sameBook(local, cloud)) {
+    rememberCloudSeen(data.updated_at);
+    return null;
+  }
+  if (isDirty()) return null;
+  if (local) {
+    try {
+      localStorage.setItem(BACKUP_KEY, JSON.stringify(bookToStored(local)));
+    } catch {
+      /* the cloud copy is still applied */
+    }
+  }
+  storeProfileBook(cloud);
+  clearDirty();
+  rememberCloudSeen(data.updated_at);
+  return cloud;
 }

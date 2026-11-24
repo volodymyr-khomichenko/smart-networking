@@ -31,11 +31,11 @@ It's not just conferences. It's every "oh, send me that link" moment:
 - **Native share** — send any link through your phone's share sheet.
 - **Pinned favorites** — up to 5 links always on top; re-pin in two taps as your context changes.
 - **Tabs** — organize links into Business / Personal / Hobby (rename them however you like).
-- **Built-in editor** — open the demo, tap Edit, make it yours. Saved only in your browser; your data never leaves your device.
+- **Built-in editor** — open the demo, tap Edit, make it yours. It stays on this device. Google sign-in is optional and syncs the card across your devices.
 - **30 icons** — brands plus generic glyphs for any custom link.
 - **A real app feel, no App Store** — installs on iOS & Android straight from the browser: home screen icon, full-screen, always up to date.
 - **Works offline** — QR codes are generated on-device, so everything scans even with zero connection.
-- **No login, no backend, no database** — a static page, deployed for free.
+- **Optional Google sign-in** — without it, the card stays in this browser. With it, the same card syncs across your devices. You can delete the cloud copy at any time.
 - **Privacy-friendly analytics** — cookieless Vercel Web Analytics: no cookies, no personal identifiers, no consent banner needed. In line with the product's privacy-first design.
 
 ## Try It

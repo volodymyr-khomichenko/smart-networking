@@ -10,6 +10,7 @@ import { DEFAULT_TABS, Profile, splitName } from "@/data/profile";
 const KEY = "smart-networking-profile-v1";
 export const BACKUP_KEY = "smart-networking-profile-backup-before-sync";
 const DIRTY_KEY = "smart-networking-profile-dirty";
+const CLOUD_SEEN_KEY = "smart-networking-cloud-seen-at";
 const DEFAULT_ID = "default";
 
 export interface SavedProfile {
@@ -148,6 +149,30 @@ export function isDirty(): boolean {
     return localStorage.getItem(DIRTY_KEY) === "1";
   } catch {
     return false;
+  }
+}
+
+export function cloudSeenAt(): string | null {
+  try {
+    return localStorage.getItem(CLOUD_SEEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function rememberCloudSeen(at: string | null): void {
+  try {
+    if (at) localStorage.setItem(CLOUD_SEEN_KEY, at);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearCloudSeen(): void {
+  try {
+    localStorage.removeItem(CLOUD_SEEN_KEY);
+  } catch {
+    /* ignore */
   }
 }
 

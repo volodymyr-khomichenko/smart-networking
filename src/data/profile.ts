@@ -397,14 +397,14 @@ export function formFields(p: Profile): FormField[] {
   return rows;
 }
 
-export type ShareField = "name" | "title" | "company" | "note";
+export type ShareField = "name" | "title" | "company" | "note" | "photo";
 
 export interface ShareSelection {
   fields: ShareField[];
   contactIds: string[];
 }
 
-const SHARE_FIELDS: ShareField[] = ["name", "title", "company", "note"];
+const SHARE_FIELDS: ShareField[] = ["name", "title", "company", "note", "photo"];
 
 /** The selection used when a profile has never chosen. */
 export function defaultShare(p: Profile): ShareSelection {
@@ -412,7 +412,7 @@ export function defaultShare(p: Profile): ShareSelection {
   const phone = p.contacts.find((c) => c.type === "phone" && !c.archived && c.value.trim());
   const site = p.contacts.find((c) => c.id === "website" && !c.archived && c.value.trim());
   return {
-    fields: ["name", "title", "company", "note"],
+    fields: ["name", "title", "company", "note", "photo"],
     contactIds: [email, phone, site].flatMap((c) => (c ? [c.id] : [])),
   };
 }
@@ -436,12 +436,24 @@ function esc(value: string): string {
     .replace(/;/g, "\\;");
 }
 
+function fold(line: string): string {
+  if (line.length <= 75) return line;
+  let out = line.slice(0, 75);
+  let index = 75;
+  while (index < line.length) {
+    out += "\r\n " + line.slice(index, index + 74);
+    index += 74;
+  }
+  return out;
+}
+
 /**
  * Builds a short vCard 3.0 on the device.
  * Phone cameras offer "Add to contacts" after scanning, with no network.
  * Email and phone are included only when those cards already exist and are not archived.
+ * photoBase64 is a small JPEG, already checked to keep the code scannable.
  */
-export function buildVCard(p: Profile): string {
+export function buildVCard(p: Profile, photoBase64?: string): string {
   const selected = shareSelection(p);
   const chosen = new Set(selected.contactIds);
   const lines = ["BEGIN:VCARD", "VERSION:3.0"];
@@ -464,6 +476,9 @@ export function buildVCard(p: Profile): string {
   }
   const note = p.bio.trim().slice(0, 100);
   if (selected.fields.includes("note") && note) lines.push(`NOTE:${esc(note)}`);
+  if (selected.fields.includes("photo") && photoBase64) {
+    lines.push(fold(`PHOTO;ENCODING=b;TYPE=JPEG:${photoBase64}`));
+  }
   lines.push("END:VCARD");
   return lines.join("\r\n");
 }

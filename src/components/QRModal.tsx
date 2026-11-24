@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Contact, Profile, qrValueFor, shareSelection, ShareField, ShareSelection } from "@/data/profile";
+import { shareCardValue } from "@/lib/card";
 
 interface QRModalProps {
   contact: Contact;
@@ -22,12 +23,25 @@ function Corner({ className }: { className: string }) {
 
 
 export default function QRModal({ contact, profile, onClose, onUpdate }: QRModalProps) {
-  const value = qrValueFor(contact, profile);
+  const plain = qrValueFor(contact, profile);
+  const [value, setValue] = useState(plain);
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const [editingShare, setEditingShare] = useState(false);
   const branded = value.length <= 320;
   const isCard = contact.type === "vcard";
+
+  useEffect(() => {
+    let live = true;
+    setValue(plain);
+    if (contact.type !== "vcard") return;
+    shareCardValue(profile).then((next) => {
+      if (live) setValue(next);
+    });
+    return () => {
+      live = false;
+    };
+  }, [contact, profile, plain]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -103,6 +117,9 @@ export default function QRModal({ contact, profile, onClose, onUpdate }: QRModal
     { field: "company", label: "Company", value: profile.company },
     { field: "note", label: "Short note", value: profile.bio.trim().slice(0, 100) },
   ];
+  if (profile.photo) {
+    shareRows.push({ field: "photo", label: "Photo", value: "Your photo" });
+  }
   const linkRows = profile.contacts.filter(
     (item) => !item.archived && item.type !== "vcard" && item.value.trim()
   );

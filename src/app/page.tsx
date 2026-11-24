@@ -22,7 +22,7 @@ import {
   profileToFile,
   storeProfileBook,
 } from "@/lib/storage";
-import { deleteCloudBook, reconcileCloud, upsertCloudBook } from "@/lib/cloud";
+import { deleteCloudBook, pullNewerCloud, reconcileCloud, upsertCloudBook } from "@/lib/cloud";
 import { createClient } from "@/lib/supabase/client";
 import { saveContactCard } from "@/lib/card";
 import ProfileCard from "@/components/ProfileCard";
@@ -35,9 +35,32 @@ import Editor from "@/components/Editor";
 import InstallHint from "@/components/InstallHint";
 import QuickAdd from "@/components/QuickAdd";
 import CopySheet from "@/components/CopySheet";
-import AccountBar from "@/components/AccountBar";
 
 const MAX_FAVORITES = 5;
+const PHOTO_SHARE_READY = "smart-networking-photo-share-ready";
+
+function includePhotoInSavedShare(book: ProfileBook): ProfileBook {
+  try {
+    if (localStorage.getItem(PHOTO_SHARE_READY) === "1") return book;
+    localStorage.setItem(PHOTO_SHARE_READY, "1");
+  } catch {
+    return book;
+  }
+  let changed = false;
+  const profiles = book.profiles.map((slot) => {
+    const share = slot.profile.share;
+    if (!slot.profile.photo || !share || share.fields.includes("photo")) return slot;
+    changed = true;
+    return {
+      ...slot,
+      profile: {
+        ...slot.profile,
+        share: { ...share, fields: [...share.fields, "photo" as const] },
+      },
+    };
+  });
+  return changed ? { ...book, profiles } : book;
+}
 
 function demoBook(): ProfileBook {
   return {
@@ -84,6 +107,8 @@ export default function Home() {
   const runReconcileRef = useRef<(userId: string) => void>(() => {});
   const flushRef = useRef<() => Promise<void>>(async () => {});
   const retryRef = useRef<() => void>(() => {});
+  const pullRef = useRef<() => Promise<void>>(async () => {});
+  const pulling = useRef(false);
 
   const cancelSyncTimer = () => {
     if (syncTimer.current) window.clearTimeout(syncTimer.current);
@@ -184,6 +209,28 @@ export default function Home() {
   };
   retryRef.current = retrySync;
 
+  const pullNewer = async () => {
+    const userId = userIdRef.current;
+    if (!userId || !cloudReady.current || reconcileInFlight.current || pulling.current) return;
+    if (isDirty() || pendingBook.current) return;
+    pulling.current = true;
+    const started = bookRef.current;
+    try {
+      const next = await pullNewerCloud(userId);
+      if (!next || userIdRef.current !== userId) return;
+      if (bookRef.current !== started || isDirty() || pendingBook.current) return;
+      setBook(next);
+      setIsCustom(true);
+      setCanRestoreBackup(hasBackupBook());
+      setSyncStatus("synced");
+    } catch {
+      /* the copy already on this device stays */
+    } finally {
+      pulling.current = false;
+    }
+  };
+  pullRef.current = pullNewer;
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("auth_error") === "1") {
@@ -195,7 +242,12 @@ export default function Home() {
 
     const stored = loadProfileBook();
     if (stored) {
-      setBook(stored);
+      const ready = includePhotoInSavedShare(stored);
+      if (ready !== stored) {
+        storeProfileBook(ready);
+        markDirty();
+      }
+      setBook(ready);
       setIsCustom(true);
     }
     setCanRestoreBackup(hasBackupBook());
@@ -231,19 +283,24 @@ export default function Home() {
     };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") void flushRef.current();
+      else void pullRef.current();
     };
     const onRetry = () => retryRef.current();
+    const onFocus = () => {
+      retryRef.current();
+      void pullRef.current();
+    };
     window.addEventListener("pagehide", onPageHide);
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("online", onRetry);
-    window.addEventListener("focus", onRetry);
+    window.addEventListener("focus", onFocus);
 
     return () => {
       sub.subscription.unsubscribe();
       window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("online", onRetry);
-      window.removeEventListener("focus", onRetry);
+      window.removeEventListener("focus", onFocus);
     };
   }, []);
 
@@ -499,12 +556,6 @@ export default function Home() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-4 pb-24 pt-6">
-      <AccountBar
-        user={user}
-        authError={authError}
-        onSignOut={handleSignOut}
-        onDeleteCloud={handleDeleteCloud}
-      />
       <div ref={menuRef} className="relative mb-4">
         <button
           type="button"
@@ -597,7 +648,17 @@ export default function Home() {
         onAdd={() => setAdding(true)}
         onCopy={() => setCopying(true)}
         onSaveContact={() => setActive(saveContactCard())}
-        onPhoto={(photo) => persist({ ...profile, photo })}
+        onPhoto={(photo) => {
+          const share = profile.share;
+          persist({
+            ...profile,
+            photo,
+            share:
+              share && !share.fields.includes("photo")
+                ? { ...share, fields: [...share.fields, "photo"] }
+                : share,
+          });
+        }}
       />
 
       <PinnedBar contacts={pinned} onSelect={setActive} />
@@ -665,12 +726,19 @@ export default function Home() {
             Privacy
           </a>
         </span>
-        {user && syncStatus === "error" ? (
-          <span className="block mt-1">Not synced, will retry</span>
-        ) : isCustom ? (
+        {authError && !user ? (
+          <span className="block mt-1">Couldn't sign in. Open Edit and try again.</span>
+        ) : null}
+        {user ? (
           <span className="block mt-1">
-            {user ? "Synced with your Google account" : "Showing your local profile"}
+            {syncStatus === "error"
+              ? "Not synced, will retry"
+              : syncStatus === "syncing"
+                ? "Syncing"
+                : "Synced"}
           </span>
+        ) : isCustom ? (
+          <span className="block mt-1">Showing your local profile</span>
         ) : null}
       </footer>
 
@@ -710,6 +778,10 @@ export default function Home() {
           importError={importError}
           canRestoreBackup={canRestoreBackup}
           onRestoreBackup={handleRestoreBackup}
+          user={user}
+          authError={authError}
+          onSignOut={handleSignOut}
+          onDeleteCloud={handleDeleteCloud}
         />
       )}
 

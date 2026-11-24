@@ -66,7 +66,7 @@ export default function AccountBar({ user, authError, onSignOut, onDeleteCloud }
     (user?.user_metadata?.picture as string | undefined);
 
   return (
-    <section className="mb-4 rounded-xl border border-line bg-card px-4 py-4 text-center">
+    <section className="mt-4 rounded-xl border border-line bg-card px-4 py-4 text-center">
       {user ? (
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
